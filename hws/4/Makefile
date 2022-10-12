@@ -3,18 +3,24 @@
 IVERILOG=iverilog -g2012 -Wall -y ./ -I ./
 VVP=vvp
 VVP_POST=-fst
+
+# On MacOS, we need to use a different GTKWave incantation. I've set this up in my .zshrc, but for
+# some reason I don't think make is detecting it.
+GTKWAVE=gtkwave
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+	GTKWAVE=/Applications/gtkwave.app/Contents/Resources/bin/gtkwave
+endif
+
 # VIVADO=vivado -mode batch -source
 
 # Look up .PHONY rules for Makefiles
 .PHONY: clean submission
 
-test_practice : practice.sv test_practice.sv
-	${IVERILOG} $^ -o test_practice.bin && ${VVP} test_practice.bin ${VVP_POST}
-waves_practice : test_practice
-	gtkwave practice.fst -a practice.gtkw
-
-# add targets for your tests of your adders and muxes here!
-
+%_test : %.sv %.test.sv
+	${IVERILOG} -o $*_test.bin $^ && ${VVP} $*_test.bin ${VVP_POST}
+%_waves : %_test
+	${GTKWAVE} $*.fst -a $*.gtkw
 
 
 # Call this to clean up all your generated files

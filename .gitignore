@@ -1,0 +1,12 @@
+*.bin
+*.vcd
+*.fst
+vivado*.log
+*.jou
+vivado*.str
+*.log
+*.checkpoint
+*.bit
+*.html
+*.xml
+.Xil
