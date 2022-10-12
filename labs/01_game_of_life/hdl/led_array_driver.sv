@@ -31,4 +31,15 @@ end
 wire [N-1:0] x_decoded;
 decoder_3_to_8 COL_DECODER(ena, x, x_decoded);
 
+always_comb begin : display
+  rows[0] = ena & cells[(0 * N) + x];
+  rows[1] = ena & cells[(1 * N) + x];
+  rows[2] = ena & cells[(2 * N) + x];
+  rows[3] = ena & cells[(3 * N) + x];
+  rows[4] = ena & cells[(4 * N) + x];
+  rows[5] = ena & cells[(5 * N) + x];
+  rows[6] = ena & cells[(6 * N) + x];
+  rows[7] = ena & cells[(7 * N) + x];
+end
+
 endmodule
