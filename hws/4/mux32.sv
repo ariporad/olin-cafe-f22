@@ -23,4 +23,42 @@ module mux32(
 	input  wire [4:0] select;
 	output logic [(N-1):0] out;
 
+  always_comb begin : mux32
+    case(select)
+      // >>> print('\n'.join([f"5'd{i:02} : out = in{i:02};" for i in range(0, 32)]))
+      5'd00 : out = in00;
+      5'd01 : out = in01;
+      5'd02 : out = in02;
+      5'd03 : out = in03;
+      5'd04 : out = in04;
+      5'd05 : out = in05;
+      5'd06 : out = in06;
+      5'd07 : out = in07;
+      5'd08 : out = in08;
+      5'd09 : out = in09;
+      5'd10 : out = in10;
+      5'd11 : out = in11;
+      5'd12 : out = in12;
+      5'd13 : out = in13;
+      5'd14 : out = in14;
+      5'd15 : out = in15;
+      5'd16 : out = in16;
+      5'd17 : out = in17;
+      5'd18 : out = in18;
+      5'd19 : out = in19;
+      5'd20 : out = in20;
+      5'd21 : out = in21;
+      5'd22 : out = in22;
+      5'd23 : out = in23;
+      5'd24 : out = in24;
+      5'd25 : out = in25;
+      5'd26 : out = in26;
+      5'd27 : out = in27;
+      5'd28 : out = in28;
+      5'd29 : out = in29;
+      5'd30 : out = in30;
+      5'd31 : out = in31;
+    endcase
+  end
+
 endmodule
