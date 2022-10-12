@@ -12,5 +12,23 @@ output logic state_q;
 
 input wire [7:0] neighbors;
 
+logic [3:0] num_neigbors;
+
+counter_8 neighbor_counter(
+	.items(neighbors),
+	.out(num_neigbors)
+);
+
+always_comb begin
+	state_d = (
+		// num_neigbors XNOR 3 or (state_q and (num_neigbors XNOR 2))
+		(num_neigbors == 4'd3) |
+		(state_q & (num_neigbors == 4'd2))
+	);
+end
+
+always_ff @( posedge clk ) begin
+	state_q = ena ? (rst ? state_0 : state_d) : 1'b0;
+end
 
 endmodule
