@@ -20,7 +20,7 @@ endif
 %_test : %.sv %.test.sv
 	${IVERILOG} -o $*_test.bin $^ && ${VVP} $*_test.bin ${VVP_POST}
 %_waves : %_test
-	${GTKWAVE} $*.fst -a $*.gtkw
+	${GTKWAVE} $*.test.sv.fst -a $*.gtkw
 
 
 # Call this to clean up all your generated files

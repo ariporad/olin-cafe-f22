@@ -15,7 +15,7 @@ practice UUT(
 );
 
 initial begin
-  $dumpfile("practice.fst");
+  $dumpfile($sformatf("%s.fst", `__FILE__));
   $dumpvars(0, UUT);
 
   clk = 0;

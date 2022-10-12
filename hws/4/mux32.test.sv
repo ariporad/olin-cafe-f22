@@ -50,7 +50,7 @@ mux32 UUT(
 );
 
 initial begin
-  $dumpfile("mux32.fst");
+  $dumpfile($sformatf("%s.fst", `__FILE__));
   $dumpvars(0, UUT);
 
   /*
