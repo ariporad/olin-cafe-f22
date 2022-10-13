@@ -15,17 +15,16 @@ endif
 # VIVADO=vivado -mode batch -source
 
 # Look up .PHONY rules for Makefiles
-.PHONY: clean submission
+.PHONY: clean submission test
 
 %_test : %.sv %.test.sv
 	${IVERILOG} -o $*_test.bin $^ && ${VVP} $*_test.bin ${VVP_POST}
 %_waves : %_test
 	${GTKWAVE} $*.test.sv.fst -a $*.gtkw
 
-
 # Call this to clean up all your generated files
 clean:
-	rm -f *.bin *.vcd *.fst vivado*.log *.jou vivado*.str *.log *.checkpoint *.bit *.html *.xml
+	rm -f *.bin *.vcd *.fst vivado*.log *.jou vivado*.str *.log *.checkpoint *.bit *.html *.xml submission.zip
 	rm -rf .Xil
 
 # Call this to generate your submission zip file.
