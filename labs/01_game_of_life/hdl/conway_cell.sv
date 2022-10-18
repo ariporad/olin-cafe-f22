@@ -22,13 +22,17 @@ counter_8 neighbor_counter(
 always_comb begin
 	state_d = (
 		// num_neigbors XNOR 3 or (state_q and (num_neigbors XNOR 2))
-		(num_neigbors == 4'd3) |
-		(state_q & (num_neigbors == 4'd2))
+		&(num_neigbors ~^ 4'd3) |
+		(state_q & (&(num_neigbors ~^ 4'd2)))
 	);
 end
 
 always_ff @( posedge clk ) begin
-	state_q = ena ? (rst ? state_0 : state_d) : 1'b0;
+	if (rst) begin
+		state_q = state_0;
+	end else if (ena) begin
+		state_q = state_d;
+	end
 end
 
 endmodule
