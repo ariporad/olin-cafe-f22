@@ -10,7 +10,7 @@ VIVADO=vivado -mode batch -source
 CONWAY_SRCS=hdl/conway_cell.sv hdl/adder_1.sv hdl/adder_n.sv hdl/counter_8.sv
 DECODER_SRCS=hdl/decoder*.sv
 LED_ARRAY_SRCS=${DECODER_SRCS} hdl/led_array_driver.sv
-MAIN_SRCS=${CONWAY_SRCS} ${LED_ARRAY_SRCS} hdl/main.sv 
+MAIN_SRCS=${CONWAY_SRCS} ${LED_ARRAY_SRCS} hdl/main.sv hdl/initial_conditions.sv main.xdc
 
 # Look up .PHONY rules for Makefiles
 .PHONY: clean submission remove_solutions

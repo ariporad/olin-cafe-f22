@@ -18,6 +18,7 @@ set_property -dict { PACKAGE_PIN B18   IOSTANDARD LVCMOS33 } [get_ports { button
 
 # Map cols[N-1:0] and rows[N-1:0] to the correct pins using the reference values below.
 
+
 set_property -dict { PACKAGE_PIN M3    IOSTANDARD LVCMOS33 } [get_ports { rows[0] }]; #IO_L8N_T1_AD14N_35 Sch=pio[01]
 set_property -dict { PACKAGE_PIN L3    IOSTANDARD LVCMOS33 } [get_ports { rows[1] }]; #IO_L8P_T1_AD14P_35 Sch=pio[02]
 set_property -dict { PACKAGE_PIN A16   IOSTANDARD LVCMOS33 } [get_ports { rows[2] }]; #IO_L12P_T1_MRCC_16 Sch=pio[03]

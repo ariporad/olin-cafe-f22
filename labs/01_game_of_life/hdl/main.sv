@@ -22,7 +22,7 @@ display modules, available from [adafruit](https://www.adafruit.com/product/454)
 
 */
 
-// `define DISABLE_GAME // Uncomment this to degug your LED driver without the game running.
+//`define DISABLE_GAME // Uncomment this to degug your LED driver without the game running.
 
 module main(clk, buttons, leds, rgb, cols, rows);
 //Module I/O and parameters
@@ -95,7 +95,7 @@ always_comb begin
     bordered_cells_0 = `INIT_5x5_PERIOD2_BLINKER;
   end else if (N == 8) begin
     // Last implementation is what counts.
-    // bordered_cells_0 = `INIT_8x8_GLIDER;
+    bordered_cells_0 = `INIT_8x8_GLIDER;
     // bordered_cells_0 = `INIT_8x8_ALTERNATING;     
   end else if (N==15) begin
     bordered_cells_0 = `INIT_13x13_PULSAR;
