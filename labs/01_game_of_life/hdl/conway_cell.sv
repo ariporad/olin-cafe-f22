@@ -14,20 +14,29 @@ input wire [7:0] neighbors;
 
 logic [3:0] num_neigbors;
 
+// We need to know how many neighbors we have as a number to know if we should live or die
 counter_8 neighbor_counter(
 	.items(neighbors),
 	.out(num_neigbors)
 );
 
 always_comb begin
+	// The rules say that any cell should be alive at the next timestep if it has 3 neighbors, and
+	// a living cell should remain alive if it has 2 neighbors.
+
+	// We use XNOR for equality comparison: XOR returns 1 when its inputs don't match,
+	// so XNOR returns 1 when its inputs do.
+	// We then AND each bit of the result. If all the bits are 1, that means all bits matched.
+	// Putting it all together: &(a ~^ b) is 1 iff a and b are the same.
 	state_d = (
-		// num_neigbors XNOR 3 or (state_q and (num_neigbors XNOR 2))
-		&(num_neigbors ~^ 4'd3) |
-		(state_q & (&(num_neigbors ~^ 4'd2)))
+		&(num_neigbors ~^ 4'd3) | // If we have 3 neigbors OR
+		(state_q & (&(num_neigbors ~^ 4'd2))) // if we're alive and have 2 neighbors
 	);
 end
 
 always_ff @( posedge clk ) begin
+	// On the rising clock edge, reset if RST is high, otherwise update the state if enabled.
+	// Note that if ENA is 0, we keep our current state; and that RST overrides ENA.
 	if (rst) begin
 		state_q = state_0;
 	end else if (ena) begin

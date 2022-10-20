@@ -1,6 +1,10 @@
 `default_nettype none
 `timescale 1ns/1ps
 
+// NOTE: This LED Matrix is active-LOW for the row pin, but we're choosing to invert that because it
+// looks much cooler (ie. a lit green LED is a dead cell, a dark LED is a living cell).
+// What even is life, you know?
+
 module led_array_driver(ena, x, cells, rows, cols);
 // Module I/O and parameters
 parameter N=5; // Size of Conway Cell Grid.
@@ -28,15 +32,21 @@ initial begin
   end
 end
 
-wire [N-1:0] x_decoded;
+// X is the current column to render (as a number). We want that column to be HIGH (and all others LOW),
+// then we'll set the appropriate values for the rows to show the image.
+// Using a number to pick only one output to turn on is exactly what a decoder does, so we can just
+// use a 3:8 decoder to light up our columns.
+// TODO: If we wanted to truly support dynamically-sized LED Matricies of any size, we'd have to
+// make this a dynamically-sized decoder.
 decoder_3_to_8 COL_DECODER(ena, x, cols);
 
+// Dynamically generate the rows
 generate
   genvar i;
   for (i = 0; i < N; i = i + 1) begin
-    always_comb begin
-      rows[i] = ena & cells[(i * N) + x];
-    end
+    // Row should be on if the matrix is enabled and the appropriate cell is alive.
+    // See above note about how we're actually inverting that behavior for aesthetics.
+    always_comb rows[i] = ena & cells[(i * N) + x];
   end
 endgenerate
 
