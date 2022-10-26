@@ -47,10 +47,9 @@ adder_n #(.N(N)) adder(
 
 always_comb begin
 	out = (
-		// (a[N-1] ^ b[N-1]) // if signs don't match
-		// ? a[N-1] // then return a < 0
-		// : sum[N - 1] // else return (a - b) < 0
-		sum[N -1]
+		(a[N-1] ^ b[N-1]) // if signs don't match
+		? a[N-1] // then return a < 0
+		: sum[N - 1] // else return (a - b) < 0
 	);
 end
 

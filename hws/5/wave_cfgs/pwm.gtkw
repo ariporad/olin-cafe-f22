@@ -1,0 +1,44 @@
+[*]
+[*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
+[*] Wed Oct 26 03:49:15 2022
+[*]
+[dumpfile] "/Users/ariporad/Olin/Work/CompArch/repo/hws/5/pwm.fst"
+[dumpfile_mtime] "Wed Oct 26 03:49:10 2022"
+[dumpfile_size] 16496
+[savefile] "/Users/ariporad/Olin/Work/CompArch/repo/hws/5/wave_cfgs/pwm.gtkw"
+[timestart] 0
+[size] 1728 1051
+[pos] -1 -1
+*-30.476753 4998000000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] test_pwm.
+[treeopen] test_pwm.PULSE_GEN.
+[sst_width] 193
+[signals_width] 133
+[sst_expanded] 1
+[sst_vpaned_height] 325
+@200
+-Control
+@28
+test_pwm.PWM.rst
+test_pwm.PWM.ena
+@200
+-
+-Duty
+@24
+test_pwm.PWM.duty[3:0]
+@800024
+test_pwm.PWM.counter[3:0]
+@28
+(0)test_pwm.PWM.counter[3:0]
+(1)test_pwm.PWM.counter[3:0]
+(2)test_pwm.PWM.counter[3:0]
+(3)test_pwm.PWM.counter[3:0]
+@1001200
+-group_end
+@200
+-
+-Output
+@29
+test_pwm.PWM.out
+[pattern_trace] 1
+[pattern_trace] 0

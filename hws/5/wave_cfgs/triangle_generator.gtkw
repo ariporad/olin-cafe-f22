@@ -1,0 +1,38 @@
+[*]
+[*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
+[*] Wed Oct 26 03:55:21 2022
+[*]
+[dumpfile] "/Users/ariporad/Olin/Work/CompArch/repo/hws/5/triangle_generator.fst"
+[dumpfile_mtime] "Wed Oct 26 03:52:36 2022"
+[dumpfile_size] 1530
+[savefile] "/Users/ariporad/Olin/Work/CompArch/repo/hws/5/wave_cfgs/triangle_generator.gtkw"
+[timestart] 1754900
+[size] 1728 1051
+[pos] -1 -1
+*-17.242271 1883500 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] test_triangle_generator.
+[sst_width] 193
+[signals_width] 193
+[sst_expanded] 1
+[sst_vpaned_height] 325
+@200
+-Control
+@28
+test_triangle_generator.UUT.rst
+test_triangle_generator.UUT.ena
+@200
+-
+-Next State
+@100000028
+test_triangle_generator.UUT.next_state
+@8023
+test_triangle_generator.UUT.next_out[3:0]
+@200
+-
+-Current State
+@28
+test_triangle_generator.UUT.state
+@188022
+test_triangle_generator.UUT.out[3:0]
+[pattern_trace] 1
+[pattern_trace] 0

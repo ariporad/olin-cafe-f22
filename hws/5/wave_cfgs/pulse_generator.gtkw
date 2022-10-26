@@ -1,0 +1,39 @@
+[*]
+[*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
+[*] Wed Oct 26 03:56:31 2022
+[*]
+[dumpfile] "/Users/ariporad/Olin/Work/CompArch/repo/hws/5/pulse_generator.fst"
+[dumpfile_mtime] "Wed Oct 26 03:55:33 2022"
+[dumpfile_size] 2181
+[savefile] "/Users/ariporad/Olin/Work/CompArch/repo/hws/5/wave_cfgs/pulse_generator.gtkw"
+[timestart] 0
+[size] 1728 1051
+[pos] -1 -1
+*-20.761644 10106000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] test_pulse_generator.
+[treeopen] test_pulse_generator.UUT.
+[sst_width] 193
+[signals_width] 207
+[sst_expanded] 1
+[sst_vpaned_height] 325
+@200
+-Control
+@28
+test_pulse_generator.UUT.ena
+test_pulse_generator.UUT.rst
+@24
+test_pulse_generator.UUT.ticks[6:0]
+@200
+-
+-Next State
+@22
+test_pulse_generator.UUT.next_count[6:0]
+@200
+-
+-Current State
+@24
+test_pulse_generator.UUT.counter[6:0]
+@28
+test_pulse_generator.UUT.out
+[pattern_trace] 1
+[pattern_trace] 0
