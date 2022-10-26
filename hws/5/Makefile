@@ -8,20 +8,20 @@ VVP_POST=-fst
 ADDER_SOURCES=hdl/adder_1.sv hdl/adder_n.sv
 
 test_comparators: tests/test_comparators.sv hdl/comparator_eq.sv hdl/comparator_lt.sv ${ADDER_SOURCES}
-	${IVERILOG} $^ -o test_slt.bin && ${VVP} test_slt.bin ${VVP_POST}
+	${IVERILOG} -o test_slt.bin $^ && ${VVP} test_slt.bin ${VVP_POST}
 
 waves_comparator: test_comparators
-	gtkwave comparators.fst --save=wave_cfgs/comparators.gtkw
+	gtkwave $(shell pwd)/comparators.fst --save=wave_cfgs/comparators.gtkw
 
 test_pulse_generator: tests/test_pulse_generator.sv hdl/pulse_generator.sv
-	${IVERILOG} $^ -o test_pulse_generator.bin && ${VVP} test_pulse_generator.bin ${VVP_POST}
+	${IVERILOG} -o test_pulse_generator.bin $^ && ${VVP} test_pulse_generator.bin ${VVP_POST}
 
 test_triangle_generator: tests/test_triangle_generator.sv hdl/triangle_generator.sv
-	${IVERILOG} $^ -o test_triangle_generator.bin && ${VVP} test_triangle_generator.bin ${VVP_POST}
+	${IVERILOG} -o test_triangle_generator.bin $^ && ${VVP} test_triangle_generator.bin ${VVP_POST}
 
 test_pwm: tests/test_pwm.sv hdl/pulse_generator.sv hdl/pwm.sv
 	@echo "This might take a while, we're testing a lot of clock cycles..."
-	${IVERILOG} $^ -o test_pwm.bin && ${VVP} test_pwm.bin ${VVP_POST}
+	${IVERILOG} -o test_pwm.bin $^ && ${VVP} test_pwm.bin ${VVP_POST}
 
 # Call this to clean up all your generated files
 clean:

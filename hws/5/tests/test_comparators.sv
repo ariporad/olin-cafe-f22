@@ -6,6 +6,9 @@ parameter N = 32;
 
 int errors = 0;
 
+// These are just helpful for debugging in GTKWave
+logic equals_is_wrong, less_than_is_wrong;
+
 logic signed [N-1:0] a, b; // Adding the 'signed' keyword here makes the behavioural logic compute a signed slt.
 wire equals, less_than;
 
@@ -38,38 +41,51 @@ end
 // You can make "tasks" in testbenches. Think of them like methods of a class, 
 // they have access to the member variables.
 task print_io;
-  $display("%8h %8h | == %b (%b) | <  %b (%b)", a, b, equals, correct_equals, less_than, correct_less_than);
+  $display("%8h %8h | == %b (%b)          | <  %b (%b)", a, b, equals, correct_equals, less_than, correct_less_than);
 endtask
 
 
 // 2) the test cases
 initial begin
+  // Initialize these (they're only set after a delay)
+  equals_is_wrong = 0;
+  less_than_is_wrong = 0;
+
   $dumpfile("comparators.fst");
   $dumpvars;
   
   $display("Specific interesting tests.");
   $display("a        b        | == uut (correct) | < uut (correct)");
-  a = 0;
-  b = 0;
-  #1 print_io();
-  
-  a = -1;
-  b = 1;
-  #1 print_io();
 
-  a = 38273;
-  b = 38273;
-  #1 print_io();
+  a = 0; b = 0; #2 print_io();
+  a = -1; b = 1; #2 print_io();
+  a = 38273; b = 38273; #2 print_io();
+  a = -(2**32); b = (2**32) - 1; #2 print_io();
+  a = -1; b = (2**32) - 1; #2 print_io();
+  a = -3; b = 7; #2 print_io();
 
   // Add more interesting tests here!
 
+  // Just some misc. numbers
+  a = 7; b = -3; #2 print_io();
+  a = 2; b = 5; #2 print_io();
+  a = -2; b = -5; #2 print_io();
+  a = 5; b = 2; #2 print_io();
+  a = -5; b = -2; #2 print_io();
+
+  // Now test overflows
+  a = 32'h90000000; b = 32'h70000000 ; #2 print_io();
+  a = 32'h70000000; b = 32'h90000000 ; #2 print_io();
+  a = 32'h79999999; b = 32'h79999999 ; #2 print_io();
+  a = 32'h80000000; b = 32'h80000000 ; #2 print_io();
   
   $display("Random testing.");
   for (int i = 0; i < 10; i = i + 1) begin : random_testing
     a = $random();
     b = $random();
-    #1 print_io();
+    #2 print_io();
   end
+  #10;
   if (errors !== 0) begin
     $display("---------------------------------------------------------------");
     $display("-- FAILURE                                                   --");
@@ -87,11 +103,17 @@ end
 //       It's best practice to use these for checkers!
 always @(a or b) begin
   #1;
-  assert(equals === correct_equals) else begin
+  if (equals === correct_equals) begin
+    equals_is_wrong = 0;
+  end else begin
+    equals_is_wrong = 1'dx; // we use x so it shows up red in GTKWave
     $display("@%t:: ERROR :: compare_eq should be %b, is %b", $time, correct_equals, equals);
     errors = errors + 1;
   end
-  assert(less_than === correct_less_than) else begin
+  if (less_than === correct_less_than) begin
+    less_than_is_wrong = 0;
+  end else begin
+    less_than_is_wrong = 1'dx; // we use x so it shows up red in GTKWave
     $display("@%t:: ERROR :: compare_lt should be %b, is %b", $time, correct_less_than, less_than);
     errors = errors + 1;
   end

@@ -1,6 +1,6 @@
 /*
   Outputs a pulse generator with a period of "ticks".
-  out should go high for one cycle ever "ticks" clocks.
+  out should go high for one cycle every "ticks" clocks.
 */
 module pulse_generator(clk, rst, ena, ticks, out);
 
