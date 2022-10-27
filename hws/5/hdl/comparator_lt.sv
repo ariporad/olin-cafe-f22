@@ -18,6 +18,9 @@ output logic out;
 // So: putting it all together: We need to add a + ~b, with c_in = 1, then check if the high/sign
 // bit of the result is 1. If, so then (a + (-b)) = (a - b) < 0, meaning a < b.
 
+// NOTE: This isn't entirely my idea, it was discussed in class and in the textbook. The HDL is mine
+// though.
+
 // NOTE: This misbehaves when it overflows, which occurs when two very-far-from-zero numbers of
 // opposite signs are compared (ex. -2^N < 2^N-1 would be wrong). This doesn't occur for two numbers
 // of the same sign (because one is negated, so it gets closer to zero).

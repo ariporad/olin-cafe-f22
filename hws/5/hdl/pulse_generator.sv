@@ -30,10 +30,11 @@ always_ff @( posedge clk ) begin
   if (rst) begin
     // The spec is slightly unclear here, I'm reading it as the output should be high for 1/ticks
     // clock cycles (ie. low for ticks-1 cycles then high for 1). It might be low for ticks cycles
-    // then high for 1, in which case this should be 0.
+    // then high for 1, in which case this should be 0. (Same below)
     counter <= 1;
   end else if (ena) begin
-    counter <= out ? 0 : next_count;
+    // See above
+    counter <= out ? 1 : next_count;
   end
 end
 
