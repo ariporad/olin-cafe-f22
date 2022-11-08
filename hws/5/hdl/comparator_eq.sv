@@ -5,8 +5,6 @@ output logic out;
 
 // Using only *structural* combinational logic, make a module that computes if a == b. 
 
-// Copy any other modules you use into the HDL folder and update the Makefile accordingly.
-
 // XOR of 2 bits returns 1 if the bits don't match. Therefore, XNOR (ie. NOT XOR) returns 1 if they do.
 // If a and b are both 32 bits, then a XNOR b returns 32 bits of pairwise comparisons (ie. the third
 // bit of the result is 1 iff the third bit of a and b match). The output of this module should be
