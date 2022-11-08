@@ -18,9 +18,9 @@ We're using [Adafruit's 2.8" TFT LCD with Cap Touch Breakout Board w/MicroSD Soc
 Last, there are a ton of best practice techniques hidden in this folder, I encourage you to explore to get some practice of learning from professional examples.
 
 ## Lab Report Details
-- [ ] Pulse generator
-- [ ] PWM Module
-- [ ] Triangle Generator
+- [x] Pulse generator
+- [x] PWM Module
+- [x] Triangle Generator
 - [ ] One of:
     - [ ] SPI Controller for Display
     - [ ] i2c Controller for touchscreen

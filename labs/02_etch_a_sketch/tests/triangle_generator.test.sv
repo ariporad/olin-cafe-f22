@@ -12,7 +12,7 @@ triangle_generator #(.N(N)) UUT(
 always #5 clk = ~clk;
 
 initial begin
-  $dumpfile("triangle_generator.fst");
+	$dumpfile($sformatf("%s.fst", `__FILE__));
   $dumpvars(0, UUT);
 
   rst = 1;

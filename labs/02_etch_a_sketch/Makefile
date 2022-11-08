@@ -14,25 +14,30 @@ MAIN_MEMORIES=memories/ili9341_init.memh
 # Look up .PHONY rules for Makefiles
 .PHONY: clean submission remove_solutions
 
+%_test: tests/%.test.sv hdl/%.sv
+	${IVERILOG} -o $*.bin $^ && ${VVP} $*.bin ${VVP_POST}
+%_waves: %_test
+	gtkwave tests/$*.test.sv.fst -a tests/%.gtkw
+
 test_pulse_generator: tests/test_pulse_generator.sv hdl/pulse_generator.sv
-	${IVERILOG} $^ -o test_pulse_generator.bin && ${VVP} test_pulse_generator.bin ${VVP_POST}
+	${IVERILOG} -o test_pulse_generator.bin $^ && ${VVP} test_pulse_generator.bin ${VVP_POST}
 
 test_pwm: tests/test_pwm.sv hdl/pulse_generator.sv hdl/pwm.sv
 	@echo "This might take a while, we're testing a lot of clock cycles!"
-	${IVERILOG} $^ -o test_pwm.bin && ${VVP} test_pwm.bin ${VVP_POST}
+	${IVERILOG} -o test_pwm.bin $^ && ${VVP} test_pwm.bin ${VVP_POST}
 
 test_triangle_generator: tests/test_triangle_generator.sv hdl/triangle_generator.sv
-	${IVERILOG} $^ -o test_triangle_generator.bin && ${VVP} test_triangle_generator.bin ${VVP_POST}
+	${IVERILOG} -o test_triangle_generator.bin $^ && ${VVP} test_triangle_generator.bin ${VVP_POST}
 waves_triangle_generator: test_triangle_generator
 	gtkwave triangle_generator.fst -a tests/triangle_generator.gtkw
 
 test_spi_controller : tests/test_spi_controller.sv hdl/spi_controller.sv hdl/spi_types.sv
-	${IVERILOG} $^ -o test_spi_controller.bin && ${VVP} test_spi_controller.bin ${VVP_POST}
+	${IVERILOG} -o test_spi_controller.bin $^ && ${VVP} test_spi_controller.bin ${VVP_POST}
 waves_spi_controller: test_spi_controller
 	gtkwave spi_controller.fst -a tests/spi_controller.gtkw
 
 test_i2c_controller : tests/test_i2c_controller.sv hdl/i2c_controller.sv hdl/i2c_types.sv
-	${IVERILOG} $^ -o test_i2c_controller.bin && ${VVP} test_i2c_controller.bin ${VVP_POST}
+	${IVERILOG} -o test_i2c_controller.bin $^ && ${VVP} test_i2c_controller.bin ${VVP_POST}
 waves_i2c_controller: test_i2c_controller
 	gtkwave i2c_controller.fst -a tests/i2c_controller.gtkw
 
@@ -41,4 +46,7 @@ memories/ili9341_init.memh: generate_memories.py
 
 memories/fibonacci.memh: generate_memories.py
 	./generate_memories.py --memory fibonacci --out memories/fibonacci.memh
+
+clean:
+	rm -f *.bin *.fst vivado*.log *.jou vivado*.str *.log *.checkpoint *.bit *.html *.xml
 

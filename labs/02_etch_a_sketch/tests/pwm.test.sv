@@ -1,4 +1,5 @@
 `timescale 1ns / 1ps
+`include "../hdl/pulse_generator.sv"
 
 module test_pwm;
 
@@ -25,7 +26,7 @@ pwm #(.N(PWM_WIDTH)) PWM(
 always #(CLK_PERIOD_NS/2) clk = ~clk;
 
 initial begin
-  $dumpfile("pwm.fst");
+	$dumpfile($sformatf("%s.fst", `__FILE__));
   $dumpvars(0, PULSE_GEN);
   $dumpvars(0, PWM);
 
