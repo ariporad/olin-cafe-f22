@@ -18,10 +18,10 @@ waves_alu: test_alu
 RFILE_SRCS:=hdl/register.sv hdl/register_file.sv hdl/mux*.sv
 
 test_register_file: ${RFILE_SRCS} tests/test_register_file.sv
-	${IVERILOG} $^ -o test_register_file.bin && ${VVP} test_register_file.bin ${VVP_POST}
+	${IVERILOG} -o test_register_file.bin $^ && ${VVP} test_register_file.bin ${VVP_POST}
 
 waves_register_file: test_register_file
-	gtkwave register_file.fst
+	gtkwave register_file.fst --save=registers.gtkwave
 
 # Call this to clean up all your generated files
 clean:

@@ -13,12 +13,19 @@ logic [31:0] wr_data;
 // Two read channels
 logic [4:0] rd_addr0, rd_addr1;
 wire [31:0] rd_data0, rd_data1;
+logic [31:0] rd_expected0, rd_expected1;
 
 register_file UUT(
   .clk(clk), .wr_ena(wr_ena), .wr_addr(wr_addr), .wr_data(wr_data),
   .rd_addr0(rd_addr0), .rd_addr1(rd_addr1),
   .rd_data0(rd_data0), .rd_data1(rd_data1)
 );
+
+always @(wr_addr or rd_addr0 or rd_addr1) begin
+  wr_data = -1*(wr_addr + 1);
+  rd_expected0 = rd_addr0 == 5'b0 ? 32'b0 : -1*(rd_addr0 + 1);
+  rd_expected1 = rd_addr1 == 5'b0 ? 32'b0 : -1*(rd_addr1 + 1);
+end
 
 initial begin
   // for all inputs: set to default value
@@ -41,7 +48,6 @@ initial begin
     @(negedge clk);
     wr_ena = 1;
     wr_addr = i[4:0];
-    wr_data = -1*(i + 1);
     @(posedge clk);
   end
   wr_ena = 0;
@@ -57,6 +63,11 @@ initial begin
     rd_addr1 = 31-i;
     @(posedge clk);
     $display("@%t: read0[%02d] = %x, read1[%02d] = %x", $time, rd_addr0, rd_data0, rd_addr1, rd_data1);
+    if (rd_data0 != rd_expected0 || rd_data1 != rd_expected1) begin
+      $display("FAIL! Incorrect Value! Expected:");
+      $display("@%t: read0[%02d] = %x, read1[%02d] = %x", $time, rd_addr0, rd_expected0, rd_addr1, rd_expected1);
+      $finish;
+    end
   end
 
 
@@ -65,7 +76,7 @@ initial begin
   rd_addr0 = 0; rd_addr1 = 0; // have both read channels read from x00, which should be zero!
   @(posedge clk);
   $display("@%t: read0[%02d] = %x, read1[%02d] = %x", $time, rd_addr0, rd_data0, rd_addr1, rd_data1);
-  if(rd_data0 != 32'd0 || rd_data1 !=32'd0) begin
+  if(rd_data0 != 32'd0 || rd_data1 != 32'd0) begin
     $display("Crical error, reading zero didn't result in zero! Quitting");
     $finish;
   end

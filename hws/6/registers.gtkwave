@@ -1,0 +1,42 @@
+[*]
+[*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
+[*] Wed Nov  9 23:52:33 2022
+[*]
+[dumpfile] "/Users/ariporad/Olin/Work/CompArch/repo/hws/6/register_file.fst"
+[dumpfile_mtime] "Wed Nov  9 23:52:04 2022"
+[dumpfile_size] 6443
+[savefile] "/Users/ariporad/Olin/Work/CompArch/repo/hws/6/registers.gtkwave"
+[timestart] 0
+[size] 1728 1051
+[pos] -1 -1
+*-16.584532 23800 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] test_register_file.
+[treeopen] test_register_file.UUT.
+[sst_width] 193
+[signals_width] 150
+[sst_expanded] 1
+[sst_vpaned_height] 326
+@28
+test_register_file.UUT.clk
+@200
+-
+-Read 0
+@22
+test_register_file.UUT.rd_addr0[4:0]
+test_register_file.UUT.rd_data0[31:0]
+@200
+-
+-Read 1
+@22
+test_register_file.UUT.rd_addr1[4:0]
+test_register_file.UUT.rd_data1[31:0]
+@200
+-
+-Write
+@28
+test_register_file.UUT.wr_ena
+@22
+test_register_file.UUT.wr_addr[4:0]
+test_register_file.UUT.wr_data[31:0]
+[pattern_trace] 1
+[pattern_trace] 0
