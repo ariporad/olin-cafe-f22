@@ -1,0 +1,35 @@
+[*]
+[*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
+[*] Wed Nov  9 20:59:54 2022
+[*]
+[dumpfile] "/Users/ariporad/Olin/Work/CompArch/repo/hws/6/alu.fst"
+[dumpfile_mtime] "Wed Nov  9 20:57:20 2022"
+[dumpfile_size] 4160
+[savefile] "/Users/ariporad/Olin/Work/CompArch/repo/hws/6/alu.gtkwave"
+[timestart] 0
+[size] 1728 1051
+[pos] -1 -1
+*-16.686701 87500 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] test_alu.
+[treeopen] test_alu.ALU.
+[treeopen] test_alu.ALU.srl_mod.
+[treeopen] test_alu.ALU.srl_mod.genblk1[0].
+[treeopen] test_alu.ALU.srl_mod.genblk1[1].
+[sst_width] 193
+[signals_width] 116
+[sst_expanded] 1
+[sst_vpaned_height] 325
+@28
+test_alu.ALU.srl_mod.in[31:0]
+@22
+test_alu.ALU.srl_mod.shamt[4:0]
+test_alu.ALU.srl_mod.out[31:0]
+@28
+test_alu.ALU.srl_mod.genblk1[0].bit_i.in[31:0]
+test_alu.ALU.srl_mod.genblk1[0].bit_i.out
+@29
+test_alu.ALU.srl_mod.genblk1[1].bit_i.in[31:0]
+@28
+test_alu.ALU.srl_mod.genblk1[1].bit_i.out
+[pattern_trace] 1
+[pattern_trace] 0

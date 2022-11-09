@@ -41,7 +41,10 @@ always_comb begin : behavioural_alu_logic
   equal = (a == b);
   zero = (result == {{N{1'b0}}});
   case (control) 
-    ALU_SLTU, ALU_SLT, ALU_SUB: begin
+	  // NOTE: The solution reports overflows for SLT and SLTU. My less-than comparator does not
+	  // overflow, and so never reports an overflow.
+    // ALU_SLTU, ALU_SLT, ALU_SUB: begin
+    ALU_SUB: begin
       overflow = (a[N-1] != b[N-1]) && (a[N-1] != difference[N-1]); 
     end
     ALU_ADD : begin

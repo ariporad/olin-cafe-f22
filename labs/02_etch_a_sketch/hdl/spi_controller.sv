@@ -13,7 +13,7 @@ input wire clk, rst; // default signals.
 
 // SPI Signals
 output logic sclk; // Serial clock to secondary device.
-output logic csb; // chip select bar, needs to go low at the start of any SPI transaction, then go high whne done.
+output logic csb; // chip select bar, needs to go low at the start of any SPI transaction, then go high when done.
 output logic mosi; // Main Out Secondary In (sends serial data to secondary device)
 input wire miso; // Main In Secondary Out (receives serial data from secondary device)
 

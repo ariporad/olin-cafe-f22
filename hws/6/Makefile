@@ -7,13 +7,13 @@ VVP_POST=-fst
 .PHONY: clean submission
 
 # VVV Add any additional files you need for the alu to the targets. VVV
-ALU_SRCS:=hdl/mux*.sv hdl/adder*.sv hdl/alu.sv hdl/shift*.sv
+ALU_SRCS:=hdl/mux*.sv hdl/adder*.sv hdl/alu.sv hdl/shift*.sv hdl/slt.sv hdl/sltu.sv hdl/one_bit_mux.sv
 ALU_TEST_FILES:=tests/test_alu.sv tests/alu_behavioural.sv
 test_alu: ${ALU_TEST_FILES} ${ALU_SRCS} tests/alu_testcases.memh
-	${IVERILOG} ${ALU_TEST_FILES} ${ALU_SRCS} -o test_alu.bin && ${VVP} test_alu.bin ${VVP_POST}
+	${IVERILOG} -o test_alu.bin ${ALU_TEST_FILES} ${ALU_SRCS} && ${VVP} test_alu.bin ${VVP_POST}
 
 waves_alu: test_alu
-		gtkwave alu.fst &
+		gtkwave alu.fst --save=alu.gtkwave &
 
 RFILE_SRCS:=hdl/register.sv hdl/register_file.sv hdl/mux*.sv
 
