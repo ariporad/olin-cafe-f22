@@ -26,10 +26,11 @@ wire [N-1:0] SLTU_result;
 logic shift_overflow;
 always_comb shift_overflow = |(b[N-1:$clog2(N)]);
 
-logic is_AND , is_OR  , is_XOR , is_SLL , is_SRL , is_SRA , is_ADD , is_SUB , is_SLT , is_SLTU;
+logic is_AND, is_OR, is_XOR, is_SLL, is_SRL, is_SRA, is_ADD, is_SUB, is_SLT, is_SLTU;
 logic is_shift, is_addsub;
 
 always_comb begin : is_whatevering
+	// These are just for convinence elsewhere
 	is_AND  = &(control ~^ ALU_AND);
 	is_OR   = &(control ~^ ALU_OR );
 	is_XOR  = &(control ~^ ALU_XOR);
@@ -56,6 +57,8 @@ always_comb begin : aux_outputs
 end
 
 always_comb begin : operations
+	// This could also be written as a mux or result = (is_AND & (a & b)) | (is_OR & (a | b)) | ...,
+	// but this is so much more readable.
 	case(control)
     	ALU_AND  : result = a & b;
     	ALU_OR   : result = a | b;
