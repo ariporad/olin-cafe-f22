@@ -48,6 +48,17 @@ always_comb begin : mosi_logic
   mosi = tx_data[bit_counter[4:0]] & (state == S_TXING);
 end
 
+wire [4:0] next_bit_counter;
+wire done_sending_bits;
+
+adder_n #(.N(5)) bit_counter_adder(
+  .a(next_bit_counter),
+  .b(5'b1),
+  .c_in(0),
+  .sum(next_bit_counter),
+  .c_out(done_sending_bits)
+);
+
 /*
 This is going to be one of our more complicated FSMs. 
 We need to sample inputs on the positive edge of sclk, but 
@@ -74,10 +85,32 @@ always_ff @(posedge clk) begin : spi_controller_fsm
   end else begin
     case (state)
       S_IDLE: begin
+        if (sclk) begin
+          o_valid <= 0;
+          i_ready <= 1;
+        end else begin
+          if (i_valid) begin
+            tx_data <= i_data;
+            state <= S_TXING;
+          end
+        end
       end
       S_TXING: begin
+        if (sclk) begin
+          i_ready <= 0;
+          bit_counter <= next_bit_counter;
+          if (done_sending_bits) begin // Note that in this case, next_bit_counter will be 0 due to overflow
+            state <= S_TX_DONE;
+          end
+        end
       end
       S_TX_DONE: begin
+        if (sclk) begin
+          case (spi_mode)
+            WRITE_8_READ_8, WRITE_8_READ_16, WRITE_8_READ_24: state <= S_RXING;
+            default: state <= S_IDLE;
+          endcase
+        end
       end
       S_RXING: begin
       end
@@ -86,6 +119,7 @@ always_ff @(posedge clk) begin : spi_controller_fsm
       S_ERROR: begin
       end
     endcase
+    sclk <= ~sclk;
   end
 end
 

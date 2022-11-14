@@ -128,7 +128,7 @@ always_comb begin: led_pwm_muxes
 end
 
 always_comb begin: rgb_leds
-  rgb = 3'b110; // RGB leds are active low, so this sets the LEDs to blue.
+  rgb = 3'b011; // RGB leds are active low, so this sets the LEDs to blue.
   // Feel free to add more logic here as a debugging signal!
 end
 

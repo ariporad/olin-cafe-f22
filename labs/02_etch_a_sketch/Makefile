@@ -31,7 +31,7 @@ test_triangle_generator: tests/test_triangle_generator.sv hdl/triangle_generator
 waves_triangle_generator: test_triangle_generator
 	gtkwave triangle_generator.fst -a tests/triangle_generator.gtkw
 
-test_spi_controller : tests/test_spi_controller.sv hdl/spi_controller.sv hdl/spi_types.sv
+test_spi_controller : tests/test_spi_controller.sv hdl/spi_controller.sv hdl/spi_types.sv hdl/adder_n.sv
 	${IVERILOG} -o test_spi_controller.bin $^ && ${VVP} test_spi_controller.bin ${VVP_POST}
 waves_spi_controller: test_spi_controller
 	gtkwave spi_controller.fst -a tests/spi_controller.gtkw
