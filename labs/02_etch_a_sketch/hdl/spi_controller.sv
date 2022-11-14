@@ -72,43 +72,19 @@ always_ff @(posedge clk) begin : spi_controller_fsm
     rx_data <= 0;
     o_data <= 0;
   end else begin
-    case(state)
-      S_IDLE : begin
+    case (state)
+      S_IDLE: begin
       end
-      S_TXING : begin
-        sclk <= ~sclk;
-        // positive edge logic
-        if(~sclk) begin
-        end else begin // negative edge logic
-          
-          if(bit_counter != 0) begin
-            bit_counter <= bit_counter - 1;
-          end else begin
-            state <= S_TX_DONE;
-          end
-        end
+      S_TXING: begin
       end
-      S_TX_DONE : begin
-        // Next State Logic
-        case (spi_mode)
-          WRITE_8, WRITE_16: begin
-              state <= S_IDLE;
-              i_ready <= 1;
-          end
-          default : state <= S_RXING;
-        endcase
-        // Bit Counter Reset Logic
-        case (spi_mode)
-          // Note, there is one extra FSM cycle that needs to be burned
-          // before we can start aquiring data, that's why it starts at N,
-          // not N-1 for this one. 
-          WRITE_8_READ_8  : bit_counter <= 5'd8;
-          WRITE_8_READ_16 : bit_counter <= 5'd16;
-          WRITE_8_READ_24 : bit_counter <= 5'd24;
-          default : bit_counter <= 0;
-        endcase
+      S_TX_DONE: begin
       end
-      default : state <= S_ERROR;
+      S_RXING: begin
+      end
+      S_RX_DONE: begin
+      end
+      S_ERROR: begin
+      end
     endcase
   end
 end
