@@ -1,5 +1,3 @@
-`ifndef ADDER_N_H
-`define ADDER_N_H
 `include "adder_1.sv"
 
 module adder_n(a, b, c_in, sum, c_out);
@@ -30,5 +28,3 @@ endgenerate
 endmodule
 // to instantiate
 // adder_n #(.N(32)) adder_32bit_a ( port list );
-
-`endif

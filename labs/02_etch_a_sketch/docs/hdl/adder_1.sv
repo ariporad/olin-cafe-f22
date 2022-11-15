@@ -2,8 +2,6 @@
   a 1 bit addder that we can daisy chain for 
   ripple carry adders
 */
-`ifndef ADDER_1_H
-`define ADDER_1_H
 
 module adder_1(a, b, c_in, sum, c_out);
 
@@ -22,5 +20,3 @@ always_comb begin : adder_gates
 end
 
 endmodule
-
-`endif

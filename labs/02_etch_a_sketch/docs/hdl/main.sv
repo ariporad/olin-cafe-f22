@@ -180,40 +180,6 @@ block_ram #(.W(VRAM_W), .L(VRAM_L)) VRAM(
   .clk(clk), .rd_addr(vram_rd_addr), .rd_data(vram_rd_data),
   .wr_ena(vram_wr_ena), .wr_addr(vram_wr_addr), .wr_data(vram_wr_data)
 );
-// Add   vram control FSM here:
-
-enum logic [1:0] { S_MAIN, S_CLEAR } state;
-
-always_ff @( posedge clk ) begin : touch_handler
-  if (rst) begin
-    vram_wr_addr <= {$clog2(VRAM_L) {1'b1} };
-    vram_wr_data <= WHITE;
-    vram_wr_ena <= 1;
-    state <= S_CLEAR;
-  end else begin
-    case (state)
-      S_CLEAR: begin
-        if (vram_wr_addr == 0) begin
-          vram_wr_ena <= 0;
-          state <= S_MAIN;
-        end else begin
-          vram_wr_ena <= 1;
-          vram_wr_data <= WHITE;
-          vram_wr_addr = vram_wr_addr - 1;
-        end
-      end
-      S_MAIN: begin
-        if (touch0.valid) begin
-          vram_wr_addr <= touch0.y*DISPLAY_WIDTH + {8'd0, touch0.x};
-          vram_wr_data <= NAVY;
-          vram_wr_ena <= 1;
-        end else begin
-          vram_wr_ena <= 0;
-        end
-      end
-    endcase
-
-  end
-end
+// Add your vram control FSM here:
 
 endmodule

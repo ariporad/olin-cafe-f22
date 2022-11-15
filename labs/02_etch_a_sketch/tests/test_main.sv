@@ -63,7 +63,7 @@ initial begin
   UUT.VRAM.dump_memory("vram.out");
   $finish;
 end
-
+endifendif
 always #500_000 $display("Test progress: %3.f%%", 100*progress);
 
 endmodule
