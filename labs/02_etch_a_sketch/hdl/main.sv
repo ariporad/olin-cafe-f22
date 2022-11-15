@@ -180,13 +180,14 @@ block_ram #(.W(VRAM_W), .L(VRAM_L)) VRAM(
   .clk(clk), .rd_addr(vram_rd_addr), .rd_data(vram_rd_data),
   .wr_ena(vram_wr_ena), .wr_addr(vram_wr_addr), .wr_data(vram_wr_data)
 );
-// Add   vram control FSM here:
+
+// Add vram control FSM here:
 
 enum logic [1:0] { S_MAIN, S_CLEAR } state;
 
 always_ff @( posedge clk ) begin : touch_handler
   if (rst) begin
-    vram_wr_addr <= {$clog2(VRAM_L) {1'b1} };
+    vram_wr_addr <= (VRAM_W * VRAM_L) - 1;
     vram_wr_data <= WHITE;
     vram_wr_ena <= 1;
     state <= S_CLEAR;
@@ -197,12 +198,13 @@ always_ff @( posedge clk ) begin : touch_handler
           vram_wr_ena <= 0;
           state <= S_MAIN;
         end else begin
-          vram_wr_ena <= 1;
-          vram_wr_data <= WHITE;
           vram_wr_addr = vram_wr_addr - 1;
+          vram_wr_data <= WHITE;
+          vram_wr_ena <= 1;
         end
       end
       S_MAIN: begin
+        // NOTE: We do not support multitouch
         if (touch0.valid) begin
           vram_wr_addr <= touch0.y*DISPLAY_WIDTH + {8'd0, touch0.x};
           vram_wr_data <= NAVY;
@@ -212,7 +214,6 @@ always_ff @( posedge clk ) begin : touch_handler
         end
       end
     endcase
-
   end
 end
 

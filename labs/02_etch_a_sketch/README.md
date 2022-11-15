@@ -1,5 +1,7 @@
 # Lab 2: Etch a Sketch
 
+**Ari's Note:** Due to unsolved FPGA issues, I wasn't able to test this is synthesis. All of the tests pass and the waveforms look right. I've discussed and debugged this with Avinash, who said that I could submit this as-is for now and will resubmit (or otherwise arrange with him) once we can get the FPGA issues.
+
 In this lab we're going to build logic to make an "etch a sketch" or sketchpad hardware device. Over the course of the lab you will learn how to:
 * Design your own specifications for complex sequential and combinational logic blocks.
 * Implement controllers for the popular SPI and i2c serial interfaces.
@@ -21,13 +23,65 @@ Last, there are a ton of best practice techniques hidden in this folder, I encou
 - [x] Pulse generator
 - [x] PWM Module
 - [x] Triangle Generator
-- [ ] One of:
-    - [ ] SPI Controller for Display
+- [x] One of:
+    - [x] SPI Controller for Display
     - [ ] i2c Controller for touchscreen
-- [ ] Learning from Professional Code: In your own words, describe the FSMs in:
-    - [ ] `ili9341_display_controller.sv`
-    - [ ] `ft6206_controller.sv`
-- [ ] Design and implement a main FSM that interfaces with a video RAM.
+- [x] Learning from Professional Code: In your own words, describe the FSMs in:
+    - [x] `ili9341_display_controller.sv`
+    - [x] `ft6206_controller.sv`
+- [x] Design and implement a main FSM that interfaces with a video RAM.
+
+# Part 0) Learning from Professional Code
+
+## `ili9341_display_controller.sv`
+
+### Main FSM
+
+- `S_INIT`: Initializes the display. All content for this state is covered by the configuration FSM below.
+- `S_INCREMENT_PIXEL`: Moves to the next pixel (taking into account the end of a row, etc.). If this pixel was the last pixel of the frame, then transition to `S_START_FRAME` to start the next frame. Otherwise, transition to `S_TX_PIXEL_DATA_START` to write the next pixel. 
+- `S_TX_PIXEL_DATA_BUSY`: Wait till the SPI controller is ready, then move on to the next pixel by transitioning to `S_INCREMENT_PIXEL`. This state appears to be unused, and feels like it probably ought to be integrated into `S_WAIT_FOR_SPI`.
+- `S_WAIT_FOR_SPI`: Helper state to wait till the SPI controller is ready, then transition to whatever the pending state is (stored in `state_after_wait`).
+- `S_ERROR`: Indicates an error has occurred. Device must be reset.
+- SPI Transactions: Each of the following states is an SPI transaction, and so transitions to its next state through `S_WAIT_FOR_SPI` to ensure that the SPI Controller has time to catch up. See the touchscreen controller's section for a more in-depth explanation of this mechanism.
+    - `S_START_FRAME`: Starts a new frame by transitioning to `S_TX_PIXEL_DATA_START`, via `S_WAIT_FOR_SPI`.
+    - `S_TX_PIXEL_DATA_START`: Write the current pixel data to the display, then move on to the next pixel by transitioning to `S_INCREMENT_PIXEL` via `S_WAIT_FOR_SPI`.
+
+### Configuration FSM
+
+This is a nested FSM used within `S_INIT`.
+
+- `S_CFG_GET_DATA_SIZE`: Begin the cycle of sending one command to the display by reading from memory the length of the command's associated data (which has already been fetched). If no commands remain, transitions to `S_CFG_DONE`. Otherwise, transitions to `S_CFG_GET_CMD` via `S_CFG_MEM_WAIT`.
+- `S_CFG_GET_CMD`: Fetch a command from memory, then transition to `S_CFG_SEND_CMD` via `S_CFG_MEM_WAIT`.
+- `S_CFG_SEND_CMD`: Send the fetched command to the display, then send its associated data by transitioning to `S_CFG_GET_DATA` via `S_CFG_SPI_WAIT`. If the command was NULL (`0x00`), then transition to `S_CFG_DONE`.
+- `S_CFG_GET_DATA`: Fetch the next byte of command data from memory, keeping track of the number of bytes remaining. Then send it to the display by transitioning to `S_CFG_SEND_DATA` via `S_CFG_MEM_WAIT`. If no bytes remain, transition back to `S_CFG_GET_DATA_SIZE` via `S_CFG_MEM_WAIT` to begin sending the next command.
+- `S_CFG_SEND_DATA`: Send the fetched byte of command data, then transition back to `S_CFG_GET_DATA` via `S_CFG_SPI_WAIT` to send the next byte.
+- `S_CFG_SPI_WAIT`: Helper state that waits for the SPI controller to be ready AND for `cfg_delay_counter` clock cycles to have elapsed, then transitions to the pending state (see `S_WAIT_FOR_SPI`, `S_WAIT_FOR_I2C_WR/RD`).
+- `S_CFG_MEM_WAIT`: Helper state that "waits" for the result to have been received from memory, then transitions to the pending state (see `S_WAIT_FOR_SPI`, `S_WAIT_FOR_I2C_WR/RD`). Since our memory only takes one clock cycle, this immediately transitions to the next state.
+- `S_CFG_DONE`: Indicates that configuration has finished, begins writing the first frame by transitioning to `S_START_FRAME` (thereby leaving the Configuration FSM).
+
+
+## `ft6206_controller.sv`
+
+This touchscreen controller's main FSM is actually considerably simpler than the display controller's. It has the following states:
+
+- Setup:
+    - `S_INIT`: Immediately transitions to `S_SET_THRESHOLD_REG`. This is the default state after a reset, and is never returned to except after a reset.
+    - `S_IDLE`: Transitions to `S_GET_REG_REG` (with `active_register = TD_STATUS`) as soon as the I2C controller is ready, provided `ena` is asserted. This state is used after after each register-read cycle, and restarts said cycle.
+- I2C Transactions: Each of the following states, except for `S_GET_REG_DONE`, is an I2C transaction, and so temporarily transitions to `S_WAIT_FOR_I2C_WR/RD` afterwards (see below):
+    - Reading: Registers are read one at a time, and the same set of states is used for all registers (the register being currently read is stored in `active_register`)
+        - `S_GET_REG_REG`: Writes the target register to the secondary
+        - `S_GET_REG_DATA`: Reads the target register's value from the secondary
+        - `S_GET_REG_DONE`: Transitions back to `S_GET_REG_REG` to read the next register. Does some processing/validation of new data. Once all registers have been read, transitions to `S_TOUCH_DONE`. This is not an I2C transaction state, and so does not transition to `S_WAIT_FOR_I2C_WR/RD`.
+    - Writing: This controller only writes to one register, `THRESHOLD` (the touch detection threshold). Consequently the writing states are specialized as `S_SET_THRESHOLD_WHATEVER`:
+        - `S_SET_THRESHOLD_REG`: Writes the target register to the secondary
+        - `S_SET_THRESHOLD_DATA`: Writes the threshold data to the secondary
+    - Waiting:
+        - `S_WAIT_FOR_I2C_WR`/`S_WAIT_FOR_I2C_RD`: Between each I2C transaction, the FSM waits until the I2C controller is ready again by transitioning to one of these states. It stores the subsequent desired state in `state_after_wait`, which these states transition to as soon as the I2C controller is ready.
+- Other:
+    - `S_TOUCH_DONE`: Happens after all registers have been read. Reformats touch data for external consumption, then transitions to `S_IDLE` (which starts the cycle all over again).
+    - `S_ERROR`: Unused
+    - `S_TOUCH_START`: Unused
+
 
 # Part 1) Sequential Logic & FPGA Programming
 Let's start with a simple example to make sure we all have the tools working and can effectively design, simulate, and synthesize combination logic and simple FSMs.
@@ -77,8 +131,8 @@ i2c can be a bit tricky of a protocol, so the real proof is if it works in synth
 
 # Part 3) Interfacing with VRAM
 Design and implement an FSM that can:
-- [ ] clear memory on button press.
-- [ ] update memory based on touch values.
-- [ ] emit draw signals based on memory.
+- [x] clear memory on button press.
+- [x] update memory based on touch values.
+- [x] emit draw signals based on memory.
 - [ ] bonus: add colors, different modes.
 - [ ] stretch bonus: add fonts/textures! (hint, creating more ROMs (see `generate_memories.py` is a good way to approach this).

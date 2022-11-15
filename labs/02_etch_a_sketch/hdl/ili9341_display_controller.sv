@@ -149,14 +149,14 @@ always_comb begin  : display_color_logic
     // Modify this section to have a different test pattern!
     // Draw a white border around every 16x16 area
     if ((pixel_x[4:0] == 5'd16) | (pixel_y[4:0] == 5'd16)) begin
-      pixel_color = WHITE;
+      pixel_color = BLACK; // CHANGE: this is now black
     end
     else begin
       case({pixel_x[4], pixel_y[4]})
         2'b00: pixel_color = RED;
         2'b01: pixel_color = GREEN;
         2'b10: pixel_color = BLUE;
-        2'b11: pixel_color = BLACK;
+        2'b11: pixel_color = ORANGE; // CHANGE: this is now orange
       endcase
     end
   end else begin
