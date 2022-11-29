@@ -97,7 +97,36 @@ always_ff @(posedge clk) begin : state_transition
 end
 
 /***************************************************************************************************
- * Instruction Decoding
+ * S_FETCH
+ **************************************************************************************************/
+
+// Memory: mem_addr, mem_wr_data, mem_rd_data, mem_wr_ena;
+// Registers: rd (write addr), rs1 (read addr 1), rs2 (read addr 2), rfile_wr_data, reg_data1, reg_data2
+// IR: ir_ena, next_ir, ir
+// ALU: src_a, src_b, alu_control, alu_result, overflow, zero, equal
+
+always_ff @(posedge clk) begin : fetch
+  if (state == S_FETCH) begin
+    // Load instruction from memory
+    mem_wr_ena <= 0;
+    mem_addr <= PC;
+    next_ir <= mem_rd_data;
+    ir_ena <= 1;
+
+    // Increment PC
+    src_a <= PC;
+    src_b <= 32'b1;
+    alu_control <= ALU_ADD;
+    PC_next <= alu_result;
+
+    // Transition
+    state <= S_DECODE;
+  end
+end
+
+
+/***************************************************************************************************
+ * S_DECODE
  **************************************************************************************************/
 
 op_type_t op_type; always_comb op_type = ir[6:0];
@@ -115,49 +144,51 @@ logic [12:0] imm_btype; always_comb imm_btype[0] = 1'b0;
 logic [31:0] imm_utype; always_comb imm_utype[11:0] = 12'b0;
 logic [31:0] imm_jtype; always_comb imm_btype[0] = 1'b0;
 
-always_comb begin : register_parsing
-  case (op_type)
-    OP_RTYPE: begin
-      rd = ir[11:7];
-      funct3_ritype = ir[14:12];
-      rs1 = ir[19:15];
-      rs2 = ir[24:20];
-      funct7 = ir[31:25];
-    end
-    OP_ITYPE: begin
-      rd = ir[11:7];
-      funct3_ritype = ir[14:12];
-      rs1 = ir[19:15];
-      imm_itype = ir[31:20];
-    end
-    OP_STYPE: begin
-      imm_stype[4:0] = ir[11:7];
-      // funct3_stype = ir[14:12]; // seemingly unused?
-      rs1 = ir[19:15];
-      rs2 = ir[24:20];
-      imm_stype[11:5] = ir[31:25];
-    end
-    OP_BTYPE: begin
-      imm_btype[11] = ir[7];
-      imm_btype[4:1] = ir[11:8];
-      funct3_btype = ir[14:12];
-      rs1 = ir[19:15];
-      rs2 = ir[24:20];
-      imm_btype[10:5] = ir[30:25];
-      imm_btype[31:12] = ir[31]; // Sign Extension
-    end
-    OP_UTYPE: begin
-      rd = ir[11:7];
-      imm_utype[31:12] = ir[31:12];
-    end
-    OP_JTYPE: begin
-      rd = ir[11:7];
-      imm_jtype[31:20] = ir[31]; // Sign extension
-      imm_jtype[10:1] = ir[30:21];
-      imm_jtype[11] = ir[20];
-      imm_jtype[19:12] = ir[19:12];
-    end
-  endcase
+always_ff @(posedge clk) begin : register_parsing
+  if (state == S_DECODE) begin
+    case (op_type)
+      OP_RTYPE: begin
+        rd <= ir[11:7];
+        funct3_ritype <= ir[14:12];
+        rs1 <= ir[19:15];
+        rs2 <= ir[24:20];
+        funct7 <= ir[31:25];
+      end
+      OP_ITYPE: begin
+        rd <= ir[11:7];
+        funct3_ritype <= ir[14:12];
+        rs1 <= ir[19:15];
+        imm_itype <= ir[31:20];
+      end
+      OP_STYPE: begin
+        imm_stype[4:0] <= ir[11:7];
+        // funct3_stype <= ir[14:12]; // seemingly unused?
+        rs1 <= ir[19:15];
+        rs2 <= ir[24:20];
+        imm_stype[11:5] <= ir[31:25];
+      end
+      OP_BTYPE: begin
+        imm_btype[11] <= ir[7];
+        imm_btype[4:1] <= ir[11:8];
+        funct3_btype <= ir[14:12];
+        rs1 <= ir[19:15];
+        rs2 <= ir[24:20];
+        imm_btype[10:5] <= ir[30:25];
+        imm_btype[31:12] <= ir[31]; // Sign Extension
+      end
+      OP_UTYPE: begin
+        rd <= ir[11:7];
+        imm_utype[31:12] <= ir[31:12];
+      end
+      OP_JTYPE: begin
+        rd <= ir[11:7];
+        imm_jtype[31:20] <= ir[31]; // Sign extension
+        imm_jtype[10:1] <= ir[30:21];
+        imm_jtype[11] <= ir[20];
+        imm_jtype[19:12] <= ir[19:12];
+      end
+    endcase
+  end
 end
 
 
