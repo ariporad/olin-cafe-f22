@@ -5,15 +5,16 @@
 `define RV32_NOP 32'h0000_0013 
 
 typedef enum logic [6:0] {
-  OP_LTYPE = 7'b0000011,
-  OP_ITYPE = 7'b0010011,
-  OP_AUIPC = 7'b0010111,
-  OP_STYPE = 7'b0100011,
+  // NOTE: In the same order as the RISC-V ISA Summary in the Textbook
   OP_RTYPE = 7'b0110011,
-  OP_LUI   = 7'b0110111,
+  OP_LTYPE = 7'b0000011, // I-Type, load immediate
+  OP_ITYPE = 7'b0010011, // I-Type
+  OP_STYPE = 7'b0100011,
   OP_BTYPE = 7'b1100011,
-  OP_JALR  = 7'b1100111,
-  OP_JAL   = 7'b1101111
+  OP_LUI   = 7'b0110111, // U-Type
+  OP_AUIPC = 7'b0010111  // U-Type
+  OP_JAL   = 7'b1101111, // J-Type
+  OP_JALR  = 7'b1100111, // J-Type/R-Type
 } op_type_t;
 
 typedef enum logic [2:0] {
