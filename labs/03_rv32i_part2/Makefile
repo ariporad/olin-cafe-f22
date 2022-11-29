@@ -19,26 +19,29 @@ RV32I_SRCS=${RFILE_SRCS} ${ALU_SRCS} ${MMU_SRCS} hdl/rv32i_defines.sv hdl/rv32i_
 	./assembler.py $< -o $@
 
 test_register_file: tests/test_register_file.sv ${RFILE_SRCS}
-	${IVERILOG} $^ -o test_register_file.bin && ${VVP} test_register_file.bin ${VVP_POST}
+	${IVERILOG} -o test_register_file.bin $^ && ${VVP} test_register_file.bin ${VVP_POST}
 
 # Modify the -DINITIAL_INST_MEM string to change the initial memory.
 # Modify the -DMAX_CYCLES string to change the number of cycles run.
 test_rv32i_itypes: tests/test_rv32i_system.sv asm/itypes.memh ${RV32I_SRCS}
-	${IVERILOG} -DINITIAL_INST_MEM=\"asm/itypes.memh\" -DMAX_CYCLES="100" tests/test_rv32i_system.sv ${RV32I_SRCS} -s test_rv32i_system -o test_rv32i_system.bin && ${VVP} test_rv32i_system.bin ${VVP_POST}
+	${IVERILOG} -DINITIAL_INST_MEM=\"asm/itypes.memh\" -DMAX_CYCLES="100" -s test_rv32i_system -o test_rv32i_system.bin tests/test_rv32i_system.sv ${RV32I_SRCS}&& ${VVP} test_rv32i_system.bin ${VVP_POST}
 
 test_rv32i_ri_types: tests/test_rv32i_system.sv asm/ritypes.memh ${RV32I_SRCS}
-	${IVERILOG} -DINITIAL_INST_MEM=\"asm/ritypes.memh\" -DMAX_CYCLES="100" tests/test_rv32i_system.sv ${RV32I_SRCS} -s test_rv32i_system -o test_rv32i_system.bin && ${VVP} test_rv32i_system.bin ${VVP_POST}
+	${IVERILOG} -DINITIAL_INST_MEM=\"asm/ritypes.memh\" -DMAX_CYCLES="100" -s test_rv32i_system -o test_rv32i_system.bin  tests/test_rv32i_system.sv ${RV32I_SRCS} && ${VVP} test_rv32i_system.bin ${VVP_POST}
 
 test_rv32i_ls_types: tests/test_rv32i_system.sv asm/lstypes.memh ${RV32I_SRCS}
-	${IVERILOG} -DINITIAL_INST_MEM=\"asm/lstypes.memh\" -DMAX_CYCLES="100" tests/test_rv32i_system.sv ${RV32I_SRCS} -s test_rv32i_system -o test_rv32i_system.bin && ${VVP} test_rv32i_system.bin ${VVP_POST}
+	${IVERILOG} -DINITIAL_INST_MEM=\"asm/lstypes.memh\" -DMAX_CYCLES="100" -s test_rv32i_system -o test_rv32i_system.bin  tests/test_rv32i_system.sv ${RV32I_SRCS} && ${VVP} test_rv32i_system.bin ${VVP_POST}
 
 test_rv32i_functions: tests/test_rv32i_system.sv asm/functions.memh ${RV32I_SRCS}
-	${IVERILOG} -DINITIAL_INST_MEM=\"asm/functions.memh\" -DMAX_CYCLES="10_000" tests/test_rv32i_system.sv ${RV32I_SRCS} -s test_rv32i_system -o test_rv32i_system.bin && ${VVP} test_rv32i_system.bin ${VVP_POST}
+	${IVERILOG} -DINITIAL_INST_MEM=\"asm/functions.memh\" -DMAX_CYCLES="10_000" -s test_rv32i_system -o test_rv32i_system.bin  tests/test_rv32i_system.sv ${RV32I_SRCS} && ${VVP} test_rv32i_system.bin ${VVP_POST}
 
 test_rv32i_peripherals: tests/test_rv32i_system.sv asm/peripherals.memh ${RV32I_SRCS}
-	${IVERILOG} -DINITIAL_INST_MEM=\"asm/peripherals.memh\" -DMAX_CYCLES="1_500_000" tests/test_rv32i_system.sv ${RV32I_SRCS} -s test_rv32i_system -o test_rv32i_system.bin && ${VVP} test_rv32i_system.bin ${VVP_POST}
+	${IVERILOG} -DINITIAL_INST_MEM=\"asm/peripherals.memh\" -DMAX_CYCLES="1_500_000" -s test_rv32i_system -o test_rv32i_system.bin  tests/test_rv32i_system.sv ${RV32I_SRCS} && ${VVP} test_rv32i_system.bin ${VVP_POST}
 
 waves_rv32i_system:
+	gtkwave rv32i_system.fst -a tests/rv32i_system.gtkw
+
+waves_%: test_%
 	gtkwave rv32i_system.fst -a tests/rv32i_system.gtkw
 
 rv32i_system.bit: ${RV32I_SRCS} build.tcl asm/peripherals.memh

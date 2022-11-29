@@ -7,7 +7,8 @@
 module rv32i_multicycle_core(
   clk, rst, ena,
   mem_addr, mem_rd_data, mem_wr_data, mem_wr_ena,
-  PC
+  PC,
+  instructions_completed
 );
 
 parameter PC_START_ADDRESS=0;
@@ -16,6 +17,7 @@ parameter PC_START_ADDRESS=0;
  * Standard control signals.
  **************************************************************************************************/
 input  wire clk, rst, ena; // <- worry about implementing the ena signal last.
+output logic instructions_completed;
 
 /***************************************************************************************************
  * Memory Interface
@@ -24,12 +26,20 @@ output logic [31:0] mem_addr, mem_wr_data;
 input   wire [31:0] mem_rd_data;
 output logic mem_wr_ena;
 
+always_ff @(posedge clk) begin
+  if (rst) begin
+    mem_wr_ena <= 0;
+    mem_addr <= 0;
+    mem_wr_data <= 0;
+  end
+end
+
 /***************************************************************************************************
  * Program Counter
  **************************************************************************************************/
 output wire [31:0] PC;
 wire [31:0] PC_old;
-logic PC_ena;
+logic PC_ena; always_comb PC_ena = (state == S_FETCH) ? 1 : 0;
 logic [31:0] PC_next; 
 
 // Program Counter Registers
@@ -43,57 +53,77 @@ register #(.N(32)) PC_OLD_REGISTER(
 /***************************************************************************************************
  * Register File
  **************************************************************************************************/
-logic reg_write;
+logic rd_ena;
 logic [4:0] rd, rs1, rs2;
-logic [31:0] rfile_wr_data;
-wire [31:0] reg_data1, reg_data2;
+logic [31:0] rd_data;
+wire [31:0] rs1_data, rs2_data;
 register_file REGISTER_FILE(
   .clk(clk), 
-  .wr_ena(reg_write), .wr_addr(rd), .wr_data(rfile_wr_data),
+  .wr_ena(rd_ena), .wr_addr(rd), .wr_data(rd_data),
   .rd_addr0(rs1), .rd_addr1(rs2),
-  .rd_data0(reg_data1), .rd_data1(reg_data2)
+  .rd_data0(rs1_data), .rd_data1(rs2_data)
 );
+
+always_ff @(posedge clk) if (rst) begin
+  rd <= 0;
+  rs1 <= 0;
+  rs2 <= 0;
+  rd_data <= 0;
+  rd_ena <= 0;
+end
 
 /***************************************************************************************************
  * ALU and related controls
  * Feel free to replace with your ALU from the homework
  **************************************************************************************************/
-logic [31:0] src_a, src_b;
+logic [31:0] alu_src_a, alu_src_b;
 alu_control_t alu_control;
 wire [31:0] alu_result;
-wire overflow, zero, equal;
+wire alu_overflow, alu_zero, alu_equal;
 alu_behavioural ALU (
-  .a(src_a), .b(src_b), .result(alu_result),
+  .a(alu_src_a), .b(alu_src_b), .result(alu_result),
   .control(alu_control),
-  .overflow(overflow), .zero(zero), .equal(equal)
+  .overflow(alu_overflow), .zero(alu_zero), .equal(alu_equal)
 );
+
+always_ff @(posedge clk) if (rst) begin
+  alu_src_a <= 0;
+  alu_src_b <= 0;
+  alu_control <= ALU_ADD;
+end
 
 /***************************************************************************************************
  * Instruction Register
  **************************************************************************************************/
-logic ir_ena;
+logic IR_ena;
 logic [31:0] next_ir;
-wire [31:0] ir;
+wire [31:0] IR;
 
 register #(.N(32)) IR_REGISTER(
-  .clk(clk), .rst(rst), .ena(ir_ena), .d(next_ir), .q(ir)
+  .clk(clk), .rst(rst), .ena(IR_ena), .d(next_ir), .q(IR)
 );
+
+always_ff @(posedge clk) if (rst) begin
+  IR_ena <= 0;
+  next_ir <= 0;
+end
 
 /***************************************************************************************************
  * CPU State
  **************************************************************************************************/
-enum logic [2:0] {
+enum logic [3:0] {
   S_FETCH  = 0,
   S_DECODE = 1,
-  S_TODO = 3'b111
+  S_EXECUTE = 2,
+  S_ERROR = 4'b1111
 } state;
 
-always_ff @(posedge clk) begin : state_transition
-  case (state)
-    S_FETCH: state <= S_DECODE;
-    S_DECODE: state <= S_TODO;
-    S_TODO: state <= S_TODO;
-  endcase
+always_ff @(posedge clk) begin
+  if (rst) begin
+    state <= S_FETCH;
+  end else if (state == S_FETCH) begin
+    state <= S_DECODE;
+  end
 end
 
 /***************************************************************************************************
@@ -101,26 +131,23 @@ end
  **************************************************************************************************/
 
 // Memory: mem_addr, mem_wr_data, mem_rd_data, mem_wr_ena;
-// Registers: rd (write addr), rs1 (read addr 1), rs2 (read addr 2), rfile_wr_data, reg_data1, reg_data2
-// IR: ir_ena, next_ir, ir
-// ALU: src_a, src_b, alu_control, alu_result, overflow, zero, equal
+// Registers: rd (write addr), rs1 (read addr 1), rs2 (read addr 2), rd_data, rs1_data, rs2_data
+// IR: IR_ena, next_ir, IR
+// ALU: alu_src_a, alu_src_b, alu_control, alu_result, alu_overflow, alu_zero, alu_equal
 
-always_ff @(posedge clk) begin : fetch
+always_comb begin : fetch
   if (state == S_FETCH) begin
     // Load instruction from memory
-    mem_wr_ena <= 0;
-    mem_addr <= PC;
-    next_ir <= mem_rd_data;
-    ir_ena <= 1;
+    mem_wr_ena = 0;
+    mem_addr = PC;
+    next_ir = mem_rd_data;
+    IR_ena = 1;
 
     // Increment PC
-    src_a <= PC;
-    src_b <= 32'b1;
-    alu_control <= ALU_ADD;
-    PC_next <= alu_result;
-
-    // Transition
-    state <= S_DECODE;
+    alu_src_a = PC;
+    alu_src_b = 32'd4;
+    alu_control = ALU_ADD;
+    PC_next = alu_result;
   end
 end
 
@@ -129,69 +156,123 @@ end
  * S_DECODE
  **************************************************************************************************/
 
-op_type_t op_type; always_comb op_type = ir[6:0];
+op_type_t op_type; // OP Type, populated during S_DECODE
+op_type_t decoded_op_type; // OP Type, comb, private
+
+always_comb begin : for_some_reason_you_cant_assign_a_value_to_an_enum
+  // For some reason iverilog didn't like this:
+  // decoded_op_type = IR[6:0]
+  // So we have this stupid thing instead
+  // TODO: Get help with this
+  case (IR[6:0])
+    7'b0110011: decoded_op_type = OP_RTYPE;
+    7'b0010011: decoded_op_type = OP_ITYPE;
+    7'b0000011: decoded_op_type = OP_LTYPE;
+    7'b0100011: decoded_op_type = OP_STYPE;
+    7'b1100011: decoded_op_type = OP_BTYPE;
+    7'b0110111: decoded_op_type = OP_LUI  ;
+    7'b0010111: decoded_op_type = OP_AUIPC;
+    7'b1101111: decoded_op_type = OP_JAL  ;
+    7'b1100111: decoded_op_type = OP_JALR ;
+  endcase
+end
 
 funct3_load_t funct3_load;
 funct3_ritype_t funct3_ritype;
 funct3_btype_t funct3_btype;
 
-logic [6:0] funct7_rtype;
+logic [6:0] funct7;
 
 // TODO: Combine some of these for efficiency
-logic [11:0] imm_itype;
-logic [11:0] imm_stype;
-logic [12:0] imm_btype; always_comb imm_btype[0] = 1'b0;
-logic [31:0] imm_utype; always_comb imm_utype[11:0] = 12'b0;
-logic [31:0] imm_jtype; always_comb imm_btype[0] = 1'b0;
+logic [31:0] imm; // sign-extended
+logic [4:0] uimm; always_comb uimm = imm[4:0]; // unsigned
+logic [31:0] upimm; always_comb upimm[11:0] = 12'b0;
 
 always_ff @(posedge clk) begin : register_parsing
   if (state == S_DECODE) begin
-    case (op_type)
+    op_type <= decoded_op_type;
+    state <= S_EXECUTE;
+    case (decoded_op_type)
       OP_RTYPE: begin
-        rd <= ir[11:7];
-        funct3_ritype <= ir[14:12];
-        rs1 <= ir[19:15];
-        rs2 <= ir[24:20];
-        funct7 <= ir[31:25];
+        rd <= IR[11:7];
+        funct3_ritype <= IR[14:12];
+        rs1 <= IR[19:15];
+        rs2 <= IR[24:20];
+        funct7 <= IR[31:25];
       end
       OP_ITYPE: begin
-        rd <= ir[11:7];
-        funct3_ritype <= ir[14:12];
-        rs1 <= ir[19:15];
-        imm_itype <= ir[31:20];
+        rd <= IR[11:7];
+        funct3_ritype <= IR[14:12];
+        rs1 <= IR[19:15];
+        imm[10:0] <= IR[30:20];
+        imm[31:11] <= IR[31]; // sign extension
       end
       OP_STYPE: begin
-        imm_stype[4:0] <= ir[11:7];
-        // funct3_stype <= ir[14:12]; // seemingly unused?
-        rs1 <= ir[19:15];
-        rs2 <= ir[24:20];
-        imm_stype[11:5] <= ir[31:25];
+        imm[4:0] <= IR[11:7];
+        // funct3_stype <= IR[14:12]; // seemingly unused?
+        rs1 <= IR[19:15];
+        rs2 <= IR[24:20];
+        imm[10:5] <= IR[30:25];
+        imm[31:11] <= IR[31]; // sign extension
       end
       OP_BTYPE: begin
-        imm_btype[11] <= ir[7];
-        imm_btype[4:1] <= ir[11:8];
-        funct3_btype <= ir[14:12];
-        rs1 <= ir[19:15];
-        rs2 <= ir[24:20];
-        imm_btype[10:5] <= ir[30:25];
-        imm_btype[31:12] <= ir[31]; // Sign Extension
+        imm[0] <= 1'b0; // LSB is always 0
+        imm[11] <= IR[7];
+        imm[4:1] <= IR[11:8];
+        funct3_btype <= IR[14:12];
+        rs1 <= IR[19:15];
+        rs2 <= IR[24:20];
+        imm[10:5] <= IR[30:25];
+        imm[31:12] <= IR[31]; // Sign Extension
       end
-      OP_UTYPE: begin
-        rd <= ir[11:7];
-        imm_utype[31:12] <= ir[31:12];
+      OP_LUI, OP_AUIPC: begin // U-Type
+        rd <= IR[11:7];
+        upimm[31:12] <= IR[31:12];
       end
-      OP_JTYPE: begin
-        rd <= ir[11:7];
-        imm_jtype[31:20] <= ir[31]; // Sign extension
-        imm_jtype[10:1] <= ir[30:21];
-        imm_jtype[11] <= ir[20];
-        imm_jtype[19:12] <= ir[19:12];
+      OP_JAL, OP_JALR: begin
+        rd <= IR[11:7];
+        imm[0] <= 1'b0; // LSB is always 0
+        imm[19:12] <= IR[19:12];
+        imm[11] <= IR[20];
+        imm[10:1] <= IR[30:21];
+        imm[31:20] <= IR[31]; // Sign extension
       end
     endcase
   end
 end
 
+/***************************************************************************************************
+ * S_EXECUTE
+ **************************************************************************************************/
 
+// I-Type //////////////////////////////////////////////////////////////////////////////////////////
+
+// is_itype, only valid if you already know it's an R or I type.
+logic _is_rtype; always_comb _is_rtype = op_type[6];
+
+always_ff @(posedge clk) if (state == S_EXECUTE) begin
+  state <= S_FETCH;
+end
+
+always_comb if (state == S_EXECUTE) begin
+  case (op_type)
+    OP_ITYPE, OP_RTYPE: begin
+      case (funct3_ritype)
+        FUNCT3_ADD: begin
+          alu_src_a = rs1_data;
+          alu_src_b = (_is_rtype) ? rs2_data : imm;
+          if (_is_rtype & funct7[5]) begin
+            alu_control = ALU_SUB;
+          end else begin
+            alu_control = ALU_ADD;
+          end
+          rd_data = alu_result;
+          rd_ena = 1;
+        end
+      endcase
+    end
+  endcase
+end
 
 endmodule
 
