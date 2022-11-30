@@ -31,6 +31,12 @@ always_ff @(posedge clk) begin
     mem_wr_ena <= 0;
     mem_addr <= 0;
     mem_wr_data <= 0;
+  end else begin
+    case (state)
+      default: begin
+        mem_wr_ena <= 0;
+      end
+    endcase
   end
 end
 
@@ -39,16 +45,19 @@ end
  **************************************************************************************************/
 output wire [31:0] PC;
 wire [31:0] PC_old;
-logic PC_ena; always_comb PC_ena = (state == S_FETCH) ? 1 : 0;
-logic [31:0] PC_next; 
+logic PC_ena; //always_comb PC_ena = (state == S_FETCH);
 
 // Program Counter Registers
 register #(.N(32), .RESET(PC_START_ADDRESS)) PC_REGISTER (
-  .clk(clk), .rst(rst), .ena(PC_ena), .d(PC_next), .q(PC)
+  .clk(clk), .rst(rst), .ena(PC_ena), .d(alu_result), .q(PC)
 );
 register #(.N(32)) PC_OLD_REGISTER(
   .clk(clk), .rst(rst), .ena(PC_ena), .d(PC), .q(PC_old)
 );
+
+always_comb begin
+  PC_ena = (state == S_FETCH);
+end
 
 /***************************************************************************************************
  * Register File
@@ -64,12 +73,19 @@ register_file REGISTER_FILE(
   .rd_data0(rs1_data), .rd_data1(rs2_data)
 );
 
-always_ff @(posedge clk) if (rst) begin
-  rd <= 0;
-  rs1 <= 0;
-  rs2 <= 0;
-  rd_data <= 0;
-  rd_ena <= 0;
+always_ff @(posedge clk) begin
+  if (rst) begin
+    rd <= 0;
+    rs1 <= 0;
+    rs2 <= 0;
+    rd_data <= 0;
+    rd_ena <= 0;
+  end else if (state == S_EXECUTE) begin
+    case (op_type)
+      OP_RTYPE, OP_ITYPE, OP_AUIPC, OP_LUI: rd_ena <= 1;
+      default: rd_ena <= 0;
+    endcase
+  end
 end
 
 /***************************************************************************************************
@@ -95,35 +111,50 @@ end
 /***************************************************************************************************
  * Instruction Register
  **************************************************************************************************/
-logic IR_ena;
-logic [31:0] next_ir;
+logic IR_ena; always_comb IR_ena = (state == S_FETCH);
 wire [31:0] IR;
 
 register #(.N(32)) IR_REGISTER(
-  .clk(clk), .rst(rst), .ena(IR_ena), .d(next_ir), .q(IR)
+  .clk(clk), .rst(rst), .ena(IR_ena), .d(mem_rd_data), .q(IR)
 );
 
-always_ff @(posedge clk) if (rst) begin
-  IR_ena <= 0;
-  next_ir <= 0;
-end
 
 /***************************************************************************************************
  * CPU State
  **************************************************************************************************/
+logic panic;
+
+always_ff @(posedge clk) if (rst) begin
+  panic <= 0;
+end
+
 enum logic [3:0] {
   S_FETCH  = 0,
   S_DECODE = 1,
   S_EXECUTE = 2,
   S_ERROR = 4'b1111
-} state;
+} state, next_state;
 
 always_ff @(posedge clk) begin
   if (rst) begin
     state <= S_FETCH;
-  end else if (state == S_FETCH) begin
-    state <= S_DECODE;
+  end else begin
+    if (panic) begin
+      state <= S_ERROR;
+    end else begin
+      state <= next_state;
+    end
   end
+end
+
+always_comb begin : find_next_state
+  case (state) 
+    S_FETCH:   next_state = S_DECODE;
+    S_DECODE:  next_state = S_EXECUTE;
+    S_EXECUTE: next_state = S_FETCH;
+
+    default: next_state = S_ERROR;
+  endcase
 end
 
 /***************************************************************************************************
@@ -132,22 +163,18 @@ end
 
 // Memory: mem_addr, mem_wr_data, mem_rd_data, mem_wr_ena;
 // Registers: rd (write addr), rs1 (read addr 1), rs2 (read addr 2), rd_data, rs1_data, rs2_data
-// IR: IR_ena, next_ir, IR
+// IR: IR_ena, IR
 // ALU: alu_src_a, alu_src_b, alu_control, alu_result, alu_overflow, alu_zero, alu_equal
 
 always_comb begin : fetch
   if (state == S_FETCH) begin
     // Load instruction from memory
-    mem_wr_ena = 0;
     mem_addr = PC;
-    next_ir = mem_rd_data;
-    IR_ena = 1;
 
     // Increment PC
     alu_src_a = PC;
     alu_src_b = 32'd4;
     alu_control = ALU_ADD;
-    PC_next = alu_result;
   end
 end
 
@@ -183,7 +210,6 @@ funct3_btype_t funct3_btype;
 
 logic [6:0] funct7;
 
-// TODO: Combine some of these for efficiency
 logic [31:0] imm; // sign-extended
 logic [4:0] uimm; always_comb uimm = imm[4:0]; // unsigned
 logic [31:0] upimm; always_comb upimm[11:0] = 12'b0;
@@ -191,7 +217,6 @@ logic [31:0] upimm; always_comb upimm[11:0] = 12'b0;
 always_ff @(posedge clk) begin : register_parsing
   if (state == S_DECODE) begin
     op_type <= decoded_op_type;
-    state <= S_EXECUTE;
     case (decoded_op_type)
       OP_RTYPE: begin
         rd <= IR[11:7];
@@ -250,10 +275,6 @@ end
 // is_itype, only valid if you already know it's an R or I type.
 logic _is_rtype; always_comb _is_rtype = op_type[6];
 
-always_ff @(posedge clk) if (state == S_EXECUTE) begin
-  state <= S_FETCH;
-end
-
 always_comb if (state == S_EXECUTE) begin
   case (op_type)
     OP_ITYPE, OP_RTYPE: begin
@@ -267,10 +288,11 @@ always_comb if (state == S_EXECUTE) begin
             alu_control = ALU_ADD;
           end
           rd_data = alu_result;
-          rd_ena = 1;
         end
+        default: panic = 1;
       endcase
     end
+    default: panic = 1;
   endcase
 end
 
