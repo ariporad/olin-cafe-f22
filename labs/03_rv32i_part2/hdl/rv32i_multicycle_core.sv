@@ -72,6 +72,13 @@ always_ff @(posedge clk) begin: PC_logic
       PC_old <= PC;
       PC <= alu_result;
     end
+    S_EXECUTE: begin
+      case (op_type)
+        OP_JAL, OP_JALR: PC <= alu_result;
+        // default: PC remains unchanged
+      endcase
+    end
+    S_BRANCH_JUMP: PC <= alu_result;
   endcase
 end
 
@@ -107,19 +114,24 @@ always_comb begin : rd_write_control
     rd_ena = 0;
     rd_data = 0;
   end else case (state)
-    S_EXECUTE: case (op_type)
-      OP_ITYPE, OP_RTYPE: begin
-        case (funct3_ritype)
-          FUNCT3_ADD: begin
-            rd_ena = 1;
-            rd_data = alu_result;
-          end
-          default: rd_ena = 0;
-        endcase
-      end
-      default: rd_ena = 0;
+    S_EXECUTE: begin
+      case (op_type)
+        OP_ITYPE, OP_RTYPE: begin
+          case (funct3_ritype)
+            FUNCT3_ADD: begin
+              rd_ena = 1;
+              rd_data = alu_result;
+            end
+            default: rd_ena = 0;
+          endcase
+        end
+        OP_JAL, OP_JALR: begin
+          rd_ena = 1;
+          rd_data = PC; // already incremented by 4
+        end
+      endcase
+    end
     default: rd_ena = 0;
-    endcase
   endcase
 end
 
@@ -173,9 +185,9 @@ always_comb begin : alu_logic
       alu_src_b = 32'd4;
       alu_control = ALU_ADD;
     end
-    S_EXECUTE: case (op_type)
-      OP_ITYPE, OP_RTYPE: begin
-        case (funct3_ritype)
+    S_EXECUTE: begin
+      case (op_type)
+        OP_RTYPE, OP_ITYPE: case (funct3_ritype)
           FUNCT3_ADD: begin
             alu_src_a = rs1_data;
             alu_src_b = (op_type == OP_RTYPE) ? rs2_data : imm;
@@ -187,9 +199,25 @@ always_comb begin : alu_logic
           end
           default: panic = 1;
         endcase
-      end
-      default: panic = 1;
-    endcase
+        OP_JAL, OP_JALR: begin
+          alu_src_a = imm;
+          alu_src_b = (op_type == OP_JALR) ? rs1_data : PC_old;
+          alu_control = ALU_ADD;
+        end
+        OP_BTYPE: case (funct3_btype)
+          FUNCT3_BNE: begin
+            alu_src_a = rs1_data;
+            alu_src_b = rs2_data;
+            alu_control = ALU_ADD; // doesn't matter
+          end
+        endcase
+      endcase
+    end
+    S_BRANCH_JUMP: begin
+      alu_src_a = imm;
+      alu_src_b = PC_old;
+      alu_control = ALU_ADD;
+    end
     default: begin
       alu_src_a = 0;
       alu_src_b = 0;
@@ -211,7 +239,8 @@ enum logic [3:0] {
   S_FETCH  = 0,
   S_DECODE = 1,
   S_EXECUTE = 2,
-  S_ERROR = 4'b1111
+  S_BRANCH_JUMP = 3,
+  S_ERROR = 15
 } state;
 
 always_ff @(posedge clk) begin
@@ -222,10 +251,37 @@ always_ff @(posedge clk) begin
   end else case (state)
     S_FETCH:   state <= S_DECODE;
     S_DECODE:  state <= S_EXECUTE;
-    S_EXECUTE: state <= S_FETCH;
-
+    S_EXECUTE: begin
+      case (op_type)
+        OP_ITYPE, OP_RTYPE, OP_JAL, OP_JALR: state <= S_FETCH;
+        OP_BTYPE: begin
+          if (should_branch) state <= S_BRANCH_JUMP;
+          else state <= S_FETCH;
+        end
+        default: state <= S_ERROR;
+      endcase
+    end
+    S_BRANCH_JUMP: state <= S_FETCH;
     default: state <= S_ERROR;
   endcase
+end
+
+/***************************************************************************************************
+ * Branching & Comparisons
+ **************************************************************************************************/
+
+logic should_branch;
+
+always_comb begin : branch_logic
+  if (rst) begin
+    should_branch = 0;
+  end else if ((state == S_EXECUTE) & (op_type == OP_BTYPE)) begin
+    case (funct3_btype)
+      FUNCT3_BNE: should_branch = ~alu_equal;
+    endcase
+  end else begin
+    should_branch = 0;
+  end
 end
 
 endmodule

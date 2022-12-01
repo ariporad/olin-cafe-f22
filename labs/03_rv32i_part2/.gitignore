@@ -1,0 +1,15 @@
+*.bin
+*.vcd
+*.fst
+vivado*.log
+*.jou
+vivado*.str
+*.log
+*.checkpoint
+*.bit
+*.html
+*.xml
+*.out
+.Xil
+__pycache__
+asm/*.memh

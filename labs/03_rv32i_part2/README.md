@@ -53,8 +53,8 @@ Your submission should include any extra tests you've run, as well as sketches/b
 ## Instruction Checklist
 Optional instructions are in italics.
 ### R-types
-- [ ] add
-- [ ] sub
+- [x] add
+- [x] sub
 - [ ] xor
 - [ ] or
 - [ ] and
@@ -64,7 +64,7 @@ Optional instructions are in italics.
 - [ ] slt
 - [ ] sltu
 ### I-types
-- [ ] addi
+- [x] addi
 - [ ] xori
 - [ ] ori
 - [ ] andi
@@ -73,6 +73,7 @@ Optional instructions are in italics.
 - [ ] srai
 - [ ] slti
 - [ ] sltiu
+- [ ] asrt: Custom instruction: panics if rs1 != imm
 ### Memory-Types (Loads/Stores)
 - [ ] lw
 - [ ] sw

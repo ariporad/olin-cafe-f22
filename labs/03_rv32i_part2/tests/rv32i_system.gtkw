@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
-[*] Thu Dec  1 00:22:18 2022
+[*] Thu Dec  1 02:40:56 2022
 [*]
 [dumpfile] "/Users/ariporad/Olin/Work/CompArch/repo/labs/03_rv32i_part2/rv32i_system.fst"
-[dumpfile_mtime] "Thu Dec  1 00:17:56 2022"
-[dumpfile_size] 6663
+[dumpfile_mtime] "Thu Dec  1 02:40:50 2022"
+[dumpfile_size] 6344
 [savefile] "/Users/ariporad/Olin/Work/CompArch/repo/labs/03_rv32i_part2/tests/rv32i_system.gtkw"
 [timestart] 0
 [size] 1728 1051
 [pos] -1 -1
-*-14.063686 77650 775000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-14.063686 15000 775000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] test_rv32i_system.
 [treeopen] test_rv32i_system.UUT.
 [treeopen] test_rv32i_system.UUT.CORE.
@@ -23,9 +23,12 @@
 @28
 test_rv32i_system.UUT.CORE.rst
 test_rv32i_system.UUT.CORE.clk
-@2028
+@2025
 ^1 /Users/ariporad/Olin/Work/CompArch/repo/labs/03_rv32i_part2/tests/rv32i_states.txt
 test_rv32i_system.UUT.CORE.state[3:0]
+@4022
+^>1 /Users/ariporad/Olin/Work/CompArch/repo/labs/03_rv32i_part2/gtkwave_filter.py
+test_rv32i_system.UUT.CORE.IR[31:0]
 @200
 -
 -PC
@@ -35,108 +38,24 @@ test_rv32i_system.UUT.CORE.PC_old[31:0]
 @200
 -
 -ALU
-@2028
-^2 /Users/ariporad/Olin/Work/CompArch/repo/labs/03_rv32i_part2/tests/alu_states.txt
-test_rv32i_system.UUT.CORE.alu_control[3:0]
-@22
-test_rv32i_system.UUT.CORE.alu_src_a[31:0]
-test_rv32i_system.UUT.CORE.alu_src_b[31:0]
-test_rv32i_system.UUT.CORE.alu_result[31:0]
-@200
--
--IR
-@4022
-^>1 /Users/ariporad/Olin/Work/CompArch/repo/labs/03_rv32i_part2/gtkwave_filter.py
-test_rv32i_system.UUT.CORE.IR[31:0]
-@200
--
--Decoder
 @c02028
-^3 /Users/ariporad/Olin/Work/CompArch/repo/labs/03_rv32i_part2/tests/op_types.txt
-test_rv32i_system.UUT.CORE.decoded_op_type[6:0]
-@2028
-^3 /Users/ariporad/Olin/Work/CompArch/repo/labs/03_rv32i_part2/tests/op_types.txt
-(0)test_rv32i_system.UUT.CORE.decoded_op_type[6:0]
-^3 /Users/ariporad/Olin/Work/CompArch/repo/labs/03_rv32i_part2/tests/op_types.txt
-(1)test_rv32i_system.UUT.CORE.decoded_op_type[6:0]
-^3 /Users/ariporad/Olin/Work/CompArch/repo/labs/03_rv32i_part2/tests/op_types.txt
-(2)test_rv32i_system.UUT.CORE.decoded_op_type[6:0]
-^3 /Users/ariporad/Olin/Work/CompArch/repo/labs/03_rv32i_part2/tests/op_types.txt
-(3)test_rv32i_system.UUT.CORE.decoded_op_type[6:0]
-^3 /Users/ariporad/Olin/Work/CompArch/repo/labs/03_rv32i_part2/tests/op_types.txt
-(4)test_rv32i_system.UUT.CORE.decoded_op_type[6:0]
-^3 /Users/ariporad/Olin/Work/CompArch/repo/labs/03_rv32i_part2/tests/op_types.txt
-(5)test_rv32i_system.UUT.CORE.decoded_op_type[6:0]
-^3 /Users/ariporad/Olin/Work/CompArch/repo/labs/03_rv32i_part2/tests/op_types.txt
-(6)test_rv32i_system.UUT.CORE.decoded_op_type[6:0]
+^2 /Users/ariporad/Olin/Work/CompArch/repo/labs/03_rv32i_part2/tests/alu_states.txt
++{control} test_rv32i_system.UUT.CORE.alu_control[3:0]
+@28
+(0)test_rv32i_system.UUT.CORE.alu_control[3:0]
+(1)test_rv32i_system.UUT.CORE.alu_control[3:0]
+(2)test_rv32i_system.UUT.CORE.alu_control[3:0]
+(3)test_rv32i_system.UUT.CORE.alu_control[3:0]
 @1401200
 -group_end
-@2028
-^3 /Users/ariporad/Olin/Work/CompArch/repo/labs/03_rv32i_part2/tests/op_types.txt
-test_rv32i_system.UUT.CORE.op_type[6:0]
-^4 /Users/ariporad/Olin/Work/CompArch/repo/labs/03_rv32i_part2/tests/funct3_ritypes.txt
-test_rv32i_system.UUT.CORE.funct3_ritype[2:0]
-@c00420
-test_rv32i_system.UUT.CORE.imm[31:0]
+@22
++{a} test_rv32i_system.UUT.CORE.alu_src_a[31:0]
++{b} test_rv32i_system.UUT.CORE.alu_src_b[31:0]
++{result} test_rv32i_system.UUT.CORE.alu_result[31:0]
 @28
-(0)test_rv32i_system.UUT.CORE.imm[31:0]
-(1)test_rv32i_system.UUT.CORE.imm[31:0]
-(2)test_rv32i_system.UUT.CORE.imm[31:0]
-(3)test_rv32i_system.UUT.CORE.imm[31:0]
-(4)test_rv32i_system.UUT.CORE.imm[31:0]
-(5)test_rv32i_system.UUT.CORE.imm[31:0]
-(6)test_rv32i_system.UUT.CORE.imm[31:0]
-(7)test_rv32i_system.UUT.CORE.imm[31:0]
-(8)test_rv32i_system.UUT.CORE.imm[31:0]
-(9)test_rv32i_system.UUT.CORE.imm[31:0]
-(10)test_rv32i_system.UUT.CORE.imm[31:0]
-(11)test_rv32i_system.UUT.CORE.imm[31:0]
-(12)test_rv32i_system.UUT.CORE.imm[31:0]
-(13)test_rv32i_system.UUT.CORE.imm[31:0]
-(14)test_rv32i_system.UUT.CORE.imm[31:0]
-(15)test_rv32i_system.UUT.CORE.imm[31:0]
-(16)test_rv32i_system.UUT.CORE.imm[31:0]
-(17)test_rv32i_system.UUT.CORE.imm[31:0]
-(18)test_rv32i_system.UUT.CORE.imm[31:0]
-(19)test_rv32i_system.UUT.CORE.imm[31:0]
-(20)test_rv32i_system.UUT.CORE.imm[31:0]
-(21)test_rv32i_system.UUT.CORE.imm[31:0]
-(22)test_rv32i_system.UUT.CORE.imm[31:0]
-(23)test_rv32i_system.UUT.CORE.imm[31:0]
-(24)test_rv32i_system.UUT.CORE.imm[31:0]
-(25)test_rv32i_system.UUT.CORE.imm[31:0]
-(26)test_rv32i_system.UUT.CORE.imm[31:0]
-(27)test_rv32i_system.UUT.CORE.imm[31:0]
-(28)test_rv32i_system.UUT.CORE.imm[31:0]
-(29)test_rv32i_system.UUT.CORE.imm[31:0]
-(30)test_rv32i_system.UUT.CORE.imm[31:0]
-(31)test_rv32i_system.UUT.CORE.imm[31:0]
-@1401200
--group_end
-@420
-test_rv32i_system.UUT.CORE.upimm[31:0]
-@24
-test_rv32i_system.UUT.CORE.uimm[4:0]
-@200
--
--Registers
-@28
-test_rv32i_system.UUT.CORE.rd_ena
-@24
-test_rv32i_system.UUT.CORE.rd[4:0]
-@22
-test_rv32i_system.UUT.CORE.rd_data[31:0]
-@24
-test_rv32i_system.UUT.CORE.rs1[4:0]
-@22
-test_rv32i_system.UUT.CORE.rs1_data[31:0]
-@24
-test_rv32i_system.UUT.CORE.rs2[4:0]
-@22
-test_rv32i_system.UUT.CORE.rs2_data[31:0]
-test_rv32i_system.UUT.CORE.REGISTER_FILE.x01[31:0]
-@23
-test_rv32i_system.UUT.CORE.REGISTER_FILE.x02[31:0]
++{overflow} test_rv32i_system.UUT.CORE.alu_overflow
++{equal} test_rv32i_system.UUT.CORE.alu_equal
++{zero} test_rv32i_system.UUT.CORE.alu_zero
 @200
 -
 -Memory
@@ -146,5 +65,48 @@ test_rv32i_system.UUT.CORE.mem_rd_data[31:0]
 test_rv32i_system.UUT.CORE.mem_wr_data[31:0]
 @28
 test_rv32i_system.UUT.CORE.mem_wr_ena
+@200
+-
+-Registers
+@24
+test_rv32i_system.UUT.CORE.rs1[4:0]
+@22
+test_rv32i_system.UUT.CORE.rs1_data[31:0]
+@24
+test_rv32i_system.UUT.CORE.rs2[4:0]
+@22
+test_rv32i_system.UUT.CORE.rs2_data[31:0]
+@28
+test_rv32i_system.UUT.CORE.rd_ena
+@24
+test_rv32i_system.UUT.CORE.rd[4:0]
+@22
+test_rv32i_system.UUT.CORE.rd_data[31:0]
+test_rv32i_system.UUT.CORE.REGISTER_FILE.x01[31:0]
+test_rv32i_system.UUT.CORE.REGISTER_FILE.x02[31:0]
+test_rv32i_system.UUT.CORE.REGISTER_FILE.x03[31:0]
+@200
+-
+-Instruction
+@28
++{Decode?} test_rv32i_system.UUT.CORE.INSTRUCTION_DECODER.ena
+@c02028
+^3 /Users/ariporad/Olin/Work/CompArch/repo/labs/03_rv32i_part2/tests/op_types.txt
+test_rv32i_system.UUT.CORE.INSTRUCTION_DECODER.op_type[6:0]
+@28
+(0)test_rv32i_system.UUT.CORE.INSTRUCTION_DECODER.op_type[6:0]
+(1)test_rv32i_system.UUT.CORE.INSTRUCTION_DECODER.op_type[6:0]
+(2)test_rv32i_system.UUT.CORE.INSTRUCTION_DECODER.op_type[6:0]
+(3)test_rv32i_system.UUT.CORE.INSTRUCTION_DECODER.op_type[6:0]
+(4)test_rv32i_system.UUT.CORE.INSTRUCTION_DECODER.op_type[6:0]
+(5)test_rv32i_system.UUT.CORE.INSTRUCTION_DECODER.op_type[6:0]
+(6)test_rv32i_system.UUT.CORE.INSTRUCTION_DECODER.op_type[6:0]
+@1401200
+-group_end
+@2028
+^4 /Users/ariporad/Olin/Work/CompArch/repo/labs/03_rv32i_part2/tests/funct3_ritypes.txt
++{funct3 (RI-Type)} test_rv32i_system.UUT.CORE.INSTRUCTION_DECODER.funct3_ritype[2:0]
+@22
+test_rv32i_system.UUT.CORE.INSTRUCTION_DECODER.imm[31:0]
 [pattern_trace] 1
 [pattern_trace] 0
