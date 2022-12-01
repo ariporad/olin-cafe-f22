@@ -23,7 +23,7 @@ typedef enum logic [2:0] {
   FUNCT3_LOAD_LW  = 3'b010,
   FUNCT3_LOAD_LBU = 3'b100,
   FUNCT3_LOAD_LHU = 3'b101
-} funct3_load_t;
+} funct3_ltype_t;
 
 typedef enum logic [2:0] {
   FUNCT3_ADD = 3'b000,

@@ -76,10 +76,23 @@ always_ff @(posedge clk) begin: PC_logic
 end
 
 /***************************************************************************************************
+ * Instruction Register
+ **************************************************************************************************/
+logic [31:0] IR;
+
+always_ff @(posedge clk) begin
+  if (rst) begin
+    IR <= 0;
+  end else case (state)
+    S_FETCH: IR <= mem_rd_data;
+    // default: IR remains unchanged
+  endcase
+end
+
+/***************************************************************************************************
  * Register File
  **************************************************************************************************/
 logic rd_ena;
-logic [4:0] rd, rs1, rs2;
 logic [31:0] rd_data;
 wire [31:0] rs1_data, rs2_data;
 register_file REGISTER_FILE(
@@ -109,6 +122,31 @@ always_comb begin : rd_write_control
     endcase
   endcase
 end
+
+/***************************************************************************************************
+ * Decoder
+ **************************************************************************************************/
+
+op_type_t op_type;
+wire [4:0] rd, rs1, rs2;
+
+funct3_ltype_t funct3_ltype;
+funct3_ritype_t funct3_ritype;
+funct3_btype_t funct3_btype;
+
+wire [6:0] funct7;
+
+wire [31:0] imm, upimm;
+wire [4:0] uimm;
+
+instruction_decoder INSTRUCTION_DECODER(
+  .ena(state == S_DECODE),
+  .clk(clk), .rst(rst), .IR(IR),
+  .op_type(op_type), .rd(rd), .rs1(rs1), .rs2(rs2),
+  .imm(imm), .uimm(uimm), .upimm(upimm),
+  .funct3_ltype(funct3_ltype), .funct3_ritype(funct3_ritype), .funct3_btype(funct3_btype),
+  .funct7(funct7)
+);
 
 /***************************************************************************************************
  * ALU and related controls
@@ -161,20 +199,6 @@ always_comb begin : alu_logic
 end
 
 /***************************************************************************************************
- * Instruction Register
- **************************************************************************************************/
-logic [31:0] IR;
-
-always_ff @(posedge clk) begin
-  if (rst) begin
-    IR <= 0;
-  end else case (state)
-    S_FETCH: IR <= mem_rd_data;
-    // default: IR remains unchanged
-  endcase
-end
-
-/***************************************************************************************************
  * CPU State
  **************************************************************************************************/
 logic panic;
@@ -202,113 +226,6 @@ always_ff @(posedge clk) begin
 
     default: state <= S_ERROR;
   endcase
-end
-
-/***************************************************************************************************
- * S_FETCH
- **************************************************************************************************/
-
-// Memory: mem_addr, mem_wr_data, mem_rd_data, mem_wr_ena;
-// Registers: rd (write addr), rs1 (read addr 1), rs2 (read addr 2), rd_data, rs1_data, rs2_data
-// IR: IR_ena, IR
-// ALU: alu_src_a, alu_src_b, alu_control, alu_result, alu_overflow, alu_zero, alu_equal
-
-
-/***************************************************************************************************
- * S_DECODE
- **************************************************************************************************/
-
-op_type_t op_type; // OP Type, populated during S_DECODE
-op_type_t decoded_op_type; // OP Type, comb, private
-
-always_comb begin : for_some_reason_you_cant_assign_a_value_to_an_enum
-  // For some reason iverilog didn't like this:
-  // decoded_op_type = IR[6:0]
-  // So we have this stupid thing instead
-  // TODO: Get help with this
-  case (IR[6:0])
-    7'b0110011: decoded_op_type = OP_RTYPE;
-    7'b0010011: decoded_op_type = OP_ITYPE;
-    7'b0000011: decoded_op_type = OP_LTYPE;
-    7'b0100011: decoded_op_type = OP_STYPE;
-    7'b1100011: decoded_op_type = OP_BTYPE;
-    7'b0110111: decoded_op_type = OP_LUI  ;
-    7'b0010111: decoded_op_type = OP_AUIPC;
-    7'b1101111: decoded_op_type = OP_JAL  ;
-    7'b1100111: decoded_op_type = OP_JALR ;
-  endcase
-end
-
-funct3_load_t funct3_load;
-funct3_ritype_t funct3_ritype;
-funct3_btype_t funct3_btype;
-
-logic [6:0] funct7;
-
-logic [31:0] imm; // sign-extended
-logic [4:0] uimm; always_comb uimm = imm[4:0]; // unsigned
-logic [31:0] upimm; always_comb upimm[11:0] = 12'b0;
-
-always_ff @(posedge clk) begin : register_parsing
-  if (rst) begin
-    op_type <= 0;
-    funct3_load <= 0;
-    funct3_ritype <= 0;
-    funct3_btype <= 0;
-    funct7 <= 0;
-    imm <= 0;
-    rd <= 0;
-    rs1 <= 0;
-    rs2 <= 0;
-  end else if (state == S_DECODE) begin
-    op_type <= decoded_op_type;
-    case (decoded_op_type)
-      OP_RTYPE: begin
-        rd <= IR[11:7];
-        funct3_ritype <= IR[14:12];
-        rs1 <= IR[19:15];
-        rs2 <= IR[24:20];
-        funct7 <= IR[31:25];
-      end
-      OP_ITYPE: begin
-        rd <= IR[11:7];
-        funct3_ritype <= IR[14:12];
-        rs1 <= IR[19:15];
-        imm[10:0] <= IR[30:20];
-        imm[31:11] <= IR[31]; // sign extension
-      end
-      OP_STYPE: begin
-        imm[4:0] <= IR[11:7];
-        // funct3_stype <= IR[14:12]; // seemingly unused?
-        rs1 <= IR[19:15];
-        rs2 <= IR[24:20];
-        imm[10:5] <= IR[30:25];
-        imm[31:11] <= IR[31]; // sign extension
-      end
-      OP_BTYPE: begin
-        imm[0] <= 1'b0; // LSB is always 0
-        imm[11] <= IR[7];
-        imm[4:1] <= IR[11:8];
-        funct3_btype <= IR[14:12];
-        rs1 <= IR[19:15];
-        rs2 <= IR[24:20];
-        imm[10:5] <= IR[30:25];
-        imm[31:12] <= IR[31]; // Sign Extension
-      end
-      OP_LUI, OP_AUIPC: begin // U-Type
-        rd <= IR[11:7];
-        upimm[31:12] <= IR[31:12];
-      end
-      OP_JAL, OP_JALR: begin
-        rd <= IR[11:7];
-        imm[0] <= 1'b0; // LSB is always 0
-        imm[19:12] <= IR[19:12];
-        imm[11] <= IR[20];
-        imm[10:1] <= IR[30:21];
-        imm[31:20] <= IR[31]; // Sign extension
-      end
-    endcase
-  end
 end
 
 endmodule
