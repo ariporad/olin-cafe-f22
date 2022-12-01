@@ -86,15 +86,15 @@ Optional instructions are in italics.
 ### B-types (Branches)
 - [x] beq
 - [x] bne
-- [ ] *blt*
-- [ ] *bge*
-- [ ] *bltu*
-- [ ] *bgeu*
+- [x] *blt*
+- [x] *bge*
+- [x] *bltu*
+- [x] *bgeu*
 ### J-types (Jumps)
 - [x] jal
 - [x] jalr (technically an i-type)
 ### U-types (Upper immediates)
-- [ ] *lui*
-- [ ] *auipc*
+- [x] *lui*
+- [x] *auipc*
 
-Note, the above list doesn't include some common psuedo-instructions like `ret` and `j` and `not` since those can be experssed in terms of what we've already listed here. See `assembler.py` for more details.
+Note, the above list doesn't include some common psuedo-instructions like `ret` and `j` and `not` since those can be expressed in terms of what we've already listed here. See `assembler.py` for more details.

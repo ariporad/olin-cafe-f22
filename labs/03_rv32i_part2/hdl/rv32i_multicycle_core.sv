@@ -95,6 +95,7 @@ always_ff @(posedge clk) begin: PC_logic
     S_EXECUTE: begin
       case (op_type)
         OP_JAL, OP_JALR: PC <= alu_result;
+        OP_AUIPC: PC <= alu_result;
         // default: PC remains unchanged
       endcase
     end
@@ -143,6 +144,10 @@ always_comb begin : register_write_control
         OP_JAL, OP_JALR: begin
           rd_ena = 1;
           rd_data = PC; // already incremented by 4
+        end
+        OP_LUI: begin
+          rd_ena = 1;
+          rd_data = upimm;
         end
       endcase
     end
@@ -264,11 +269,36 @@ always_comb begin : alu_logic
             alu_src_b = rs2_data;
             alu_control = ALU_ADD; // doesn't matter
           end
+          FUNCT3_BLT: begin
+            alu_src_a = rs1_data;
+            alu_src_b = rs2_data;
+            alu_control = ALU_SLT;
+          end
+          FUNCT3_BLTU: begin
+            alu_src_a = rs1_data;
+            alu_src_b = rs2_data;
+            alu_control = ALU_SLTU;
+          end
+          FUNCT3_BGE: begin
+            alu_src_a = rs2_data;
+            alu_src_b = rs1_data;
+            alu_control = ALU_SLT;
+          end
+          FUNCT3_BGEU: begin
+            alu_src_a = rs2_data;
+            alu_src_b = rs1_data;
+            alu_control = ALU_SLTU;
+          end
           default: `PANIC("Unknown funct3_btype");
         endcase
         OP_LTYPE, OP_STYPE: begin
           alu_src_a = rs1_data;
           alu_src_b = imm;
+          alu_control = ALU_ADD;
+        end
+        OP_AUIPC: begin
+          alu_src_b = PC_old;
+          alu_src_a = upimm;
           alu_control = ALU_ADD;
         end
         default: `PANIC("Unknown funct3_l/stype");
@@ -316,7 +346,7 @@ always_ff @(posedge clk) begin
     S_DECODE:  state <= S_EXECUTE;
     S_EXECUTE: begin
       case (op_type)
-        OP_ITYPE, OP_RTYPE, OP_JAL, OP_JALR: state <= S_FETCH;
+        OP_ITYPE, OP_RTYPE, OP_JAL, OP_JALR, OP_LUI, OP_AUIPC: state <= S_FETCH;
         OP_BTYPE: state <= (should_branch) ? S_BRANCH_JUMP : S_FETCH;
         OP_LTYPE: state <= S_LOAD;
         OP_STYPE: state <= S_STORE;
@@ -345,6 +375,11 @@ always_comb begin : branch_logic
     case (funct3_btype)
       FUNCT3_BNE: should_branch = ~alu_equal;
       FUNCT3_BEQ: should_branch = alu_equal;
+      FUNCT3_BLT: should_branch = alu_result[0];
+      FUNCT3_BGE: should_branch = alu_result[0] | alu_equal;
+      FUNCT3_BLTU: should_branch = alu_result[0];
+      FUNCT3_BGEU: should_branch = alu_result[0] | alu_equal;
+      default: `PANIC("Unknown branch type!")
     endcase
   end else begin
     should_branch = 0;
