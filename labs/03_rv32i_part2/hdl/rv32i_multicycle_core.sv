@@ -19,21 +19,6 @@ module rv32i_multicycle_core(
   instructions_completed
 );
 
-/**
-
-Thoughts on timing:
-- Registers only change on positive clock edge
-- Each state should be present for one clock cycle (maybe more in the future)
-- When a clock cycle begins, a new state gets stored in the state register
-- Therefore, during a given state's clock cycle, all the CL runs to do the work
-- At the end of a state's clock cycle, all the results from the CL gets copied into registers
-
-Therefore:
-- In an always_ff block, `state` refers to the state that just finished (?)
-- So an always_ff block should store things that the CL calculated.
-- ENAs need to be combinational
-*/
-
 parameter PC_START_ADDRESS=0;
 
 /***************************************************************************************************
@@ -87,7 +72,7 @@ always_ff @(posedge clk) begin: PC_logic
   if (rst) begin
     PC <= PC_START_ADDRESS;
     PC_old <= 0;
-  end else case (state)
+  end else if (ena) case (state)
     S_FETCH: begin
       PC_old <= PC;
       PC <= alu_result;
@@ -111,7 +96,7 @@ logic [31:0] IR;
 always_ff @(posedge clk) begin
   if (rst) begin
     IR <= 0;
-  end else case (state)
+  end else if (ena) case (state)
     S_FETCH: IR <= mem_rd_data;
     // default: IR remains unchanged
   endcase
@@ -301,7 +286,6 @@ always_comb begin : alu_logic
           alu_src_a = upimm;
           alu_control = ALU_ADD;
         end
-        default: `PANIC("Unknown funct3_l/stype");
       endcase
     end
     S_BRANCH_JUMP: begin
@@ -337,6 +321,8 @@ enum logic [3:0] {
 always_ff @(posedge clk) begin
   if (rst) begin
     state <= S_FETCH;
+  end else if (~ena) begin
+    // Do nothing if disabled
   end else if (halt) begin
     $display("Halting!");
     state <= S_HALT;
@@ -379,7 +365,7 @@ always_comb begin : branch_logic
       FUNCT3_BGE: should_branch = alu_result[0] | alu_equal;
       FUNCT3_BLTU: should_branch = alu_result[0];
       FUNCT3_BGEU: should_branch = alu_result[0] | alu_equal;
-      default: `PANIC("Unknown branch type!")
+      default: `PANIC("Unknown branch type!");
     endcase
   end else begin
     should_branch = 0;
@@ -395,6 +381,8 @@ logic [31:0] load_store_address;
 always_ff @(posedge clk) begin : load_store_address_logic
   if (rst) begin
     load_store_address <= 0;
+  end else if (~ena) begin
+    // Do nothing if ena is LOW
   end else if ((state == S_EXECUTE) & ((op_type == OP_LTYPE) | (op_type == OP_STYPE))) begin
     load_store_address <= alu_result;
   end else begin
