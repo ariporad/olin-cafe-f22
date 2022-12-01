@@ -55,27 +55,26 @@ Optional instructions are in italics.
 ### R-types
 - [x] add
 - [x] sub
-- [ ] xor
-- [ ] or
-- [ ] and
-- [ ] sll
-- [ ] srl
-- [ ] sra
-- [ ] slt
-- [ ] sltu
+- [x] xor
+- [x] or
+- [x] and
+- [x] sll
+- [x] srl
+- [x] sra
+- [x] slt
+- [x] sltu
 ### I-types
 - [x] addi
-- [ ] xori
-- [ ] ori
-- [ ] andi
-- [ ] slli
-- [ ] srli
-- [ ] srai
-- [ ] slti
-- [ ] sltiu
-- [ ] asrt: Custom instruction: panics if rs1 != imm
+- [x] xori
+- [x] ori
+- [x] andi
+- [x] slli
+- [x] srli
+- [x] srai
+- [x] slti
+- [x] sltiu
 ### Memory-Types (Loads/Stores)
-- [ ] lw
+- [ ] lw: `lw rd, imm(rs1)` -> `rd = [rs1 + SignExt(imm)]`
 - [ ] sw
 - [ ] *lb*
 - [ ] *lh*
@@ -85,15 +84,15 @@ Optional instructions are in italics.
 - [ ] *sh*
 
 ### B-types (Branches)
-- [ ] beq
-- [ ] bne
+- [x] beq
+- [x] bne
 - [ ] *blt*
 - [ ] *bge*
 - [ ] *bltu*
 - [ ] *bgeu*
 ### J-types (Jumps)
-- [ ] jal
-- [ ] jalr (technically an i-type)
+- [x] jal
+- [x] jalr (technically an i-type)
 ### U-types (Upper immediates)
 - [ ] *lui*
 - [ ] *auipc*

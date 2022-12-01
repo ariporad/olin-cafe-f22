@@ -117,13 +117,8 @@ always_comb begin : rd_write_control
     S_EXECUTE: begin
       case (op_type)
         OP_ITYPE, OP_RTYPE: begin
-          case (funct3_ritype)
-            FUNCT3_ADD: begin
-              rd_ena = 1;
-              rd_data = alu_result;
-            end
-            default: rd_ena = 0;
-          endcase
+          rd_ena = 1;
+          rd_data = alu_result;
         end
         OP_JAL, OP_JALR: begin
           rd_ena = 1;
@@ -174,6 +169,26 @@ alu_behavioural ALU (
   .overflow(alu_overflow), .zero(alu_zero), .equal(alu_equal)
 );
 
+alu_control_t ri_type_alu_control;
+
+always_comb begin : ri_alu_control_logic
+  FUNCT3_ADD: begin
+    if (op_type == OP_RTYPE & funct7[5]) begin
+      alu_control = ALU_SUB;
+    end else begin
+      alu_control = ALU_ADD;
+    end
+  end
+  FUNCT3_SLL:  ri_type_alu_control = ALU_SLL;
+  FUNCT3_SLT:  ri_type_alu_control = ALU_SLT;
+  FUNCT3_SLTU: ri_type_alu_control = ALU_SLTU;
+  FUNCT3_XOR:  ri_type_alu_control = ALU_XOR;
+  FUNCT3_OR:   ri_type_alu_control = ALU_OR;
+  FUNCT3_AND:  ri_type_alu_control = ALU_AND;
+  FUNCT3_SHIFT_RIGHT: ri_type_alu_control = (funct7[5]) ? ALU_SRA : ALU_SRL;
+  default: panic = 1;
+end
+
 always_comb begin : alu_logic
   if (rst) begin
     alu_src_a = 0;
@@ -187,25 +202,26 @@ always_comb begin : alu_logic
     end
     S_EXECUTE: begin
       case (op_type)
-        OP_RTYPE, OP_ITYPE: case (funct3_ritype)
-          FUNCT3_ADD: begin
-            alu_src_a = rs1_data;
-            alu_src_b = (op_type == OP_RTYPE) ? rs2_data : imm;
-            if (op_type == OP_RTYPE & funct7[5]) begin
-              alu_control = ALU_SUB;
-            end else begin
-              alu_control = ALU_ADD;
-            end
-          end
-          default: panic = 1;
-        endcase
+        OP_ITYPE: begin
+          alu_control = ri_type_alu_control;
+          alu_src_a = rs1_data;
+          case (funct3_ritype)
+            FUNCT3_SLL, FUNCT3_SHIFT_RIGHT: alu_src_b = uimm;
+            default: alu_src_b = imm;
+          endcase
+        end
+        OP_RTYPE: begin
+          alu_control = ri_type_alu_control;
+          alu_src_a = rs1_data;
+          alu_src_b = rs2_data;
+        end
         OP_JAL, OP_JALR: begin
           alu_src_a = imm;
           alu_src_b = (op_type == OP_JALR) ? rs1_data : PC_old;
           alu_control = ALU_ADD;
         end
         OP_BTYPE: case (funct3_btype)
-          FUNCT3_BNE: begin
+          FUNCT3_BNE, FUNCT3_BEQ: begin
             alu_src_a = rs1_data;
             alu_src_b = rs2_data;
             alu_control = ALU_ADD; // doesn't matter
@@ -238,8 +254,11 @@ end
 enum logic [3:0] {
   S_FETCH  = 0,
   S_DECODE = 1,
+  // NOTE: all instruction types must start on S_EXECUTE, since at the time we're picking the next
+  // state S_DECODE hasn't finished yet. This should probably be fixed, but isn't a big blocker.
   S_EXECUTE = 2,
   S_BRANCH_JUMP = 3,
+  S_LOAD = 4,
   S_ERROR = 15
 } state;
 
@@ -254,10 +273,7 @@ always_ff @(posedge clk) begin
     S_EXECUTE: begin
       case (op_type)
         OP_ITYPE, OP_RTYPE, OP_JAL, OP_JALR: state <= S_FETCH;
-        OP_BTYPE: begin
-          if (should_branch) state <= S_BRANCH_JUMP;
-          else state <= S_FETCH;
-        end
+        OP_BTYPE: state <= (should_branch) ? S_BRANCH_JUMP : S_FETCH;
         default: state <= S_ERROR;
       endcase
     end
@@ -278,6 +294,7 @@ always_comb begin : branch_logic
   end else if ((state == S_EXECUTE) & (op_type == OP_BTYPE)) begin
     case (funct3_btype)
       FUNCT3_BNE: should_branch = ~alu_equal;
+      FUNCT3_BEQ: should_branch = alu_equal;
     endcase
   end else begin
     should_branch = 0;
