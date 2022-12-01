@@ -1,21 +1,21 @@
 [*]
 [*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
-[*] Thu Dec  1 02:40:56 2022
+[*] Thu Dec  1 19:26:40 2022
 [*]
 [dumpfile] "/Users/ariporad/Olin/Work/CompArch/repo/labs/03_rv32i_part2/rv32i_system.fst"
-[dumpfile_mtime] "Thu Dec  1 02:40:50 2022"
-[dumpfile_size] 6344
+[dumpfile_mtime] "Thu Dec  1 19:26:34 2022"
+[dumpfile_size] 7619
 [savefile] "/Users/ariporad/Olin/Work/CompArch/repo/labs/03_rv32i_part2/tests/rv32i_system.gtkw"
 [timestart] 0
 [size] 1728 1051
 [pos] -1 -1
-*-14.063686 15000 775000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-16.063686 38000 775000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] test_rv32i_system.
 [treeopen] test_rv32i_system.UUT.
 [treeopen] test_rv32i_system.UUT.CORE.
 [treeopen] test_rv32i_system.UUT.MMU.
 [sst_width] 193
-[signals_width] 315
+[signals_width] 312
 [sst_expanded] 1
 [sst_vpaned_height] 756
 @200
@@ -23,12 +23,12 @@
 @28
 test_rv32i_system.UUT.CORE.rst
 test_rv32i_system.UUT.CORE.clk
-@2025
+@2024
 ^1 /Users/ariporad/Olin/Work/CompArch/repo/labs/03_rv32i_part2/tests/rv32i_states.txt
 test_rv32i_system.UUT.CORE.state[3:0]
 @4022
 ^>1 /Users/ariporad/Olin/Work/CompArch/repo/labs/03_rv32i_part2/gtkwave_filter.py
-test_rv32i_system.UUT.CORE.IR[31:0]
++{Instruction} test_rv32i_system.UUT.CORE.IR[31:0]
 @200
 -
 -PC

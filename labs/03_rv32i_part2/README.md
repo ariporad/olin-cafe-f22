@@ -74,8 +74,8 @@ Optional instructions are in italics.
 - [x] slti
 - [x] sltiu
 ### Memory-Types (Loads/Stores)
-- [ ] lw: `lw rd, imm(rs1)` -> `rd = [rs1 + SignExt(imm)]`
-- [ ] sw
+- [x] lw: `lw rd, imm(rs1)` -> `rd = [rs1 + SignExt(imm)]`
+- [x] sw
 - [ ] *lb*
 - [ ] *lh*
 - [ ] *lbu*

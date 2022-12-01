@@ -1,16 +1,26 @@
 `timescale 1ns/1ps
 `default_nettype none
 
+`ifndef PANIC
+  `ifdef SIMULATION
+    `define PANIC $error
+  `else
+    `define PANIC
+  `endif // SIMULATION
+`endif // `PANIC
+
 module instruction_decoder(
 	clk, ena, rst, IR,
-	op_type, rd, rs1, rs2, imm, uimm, upimm,
-	funct3_ltype, funct3_ritype, funct3_btype, funct7
+	op_type, rd, rs1, rs2, imm, uimm, upimm, halt,
+	funct3_ltype, funct3_ritype, funct3_btype, funct3_stype, funct7
 );
 input wire clk, ena, rst;
 input wire [31:0] IR;
 
 output op_type_t op_type;
 op_type_t decoded_op_type; // OP Type, comb, private
+
+output logic halt;
 
 output logic [4:0] rd, rs1, rs2;
 
@@ -21,6 +31,7 @@ output logic [31:0] upimm; always_comb upimm[11:0] = 12'b0;
 output funct3_ltype_t funct3_ltype;
 output funct3_ritype_t funct3_ritype;
 output funct3_btype_t funct3_btype;
+output funct3_stype_t funct3_stype;
 
 output logic [6:0] funct7;
 
@@ -39,6 +50,7 @@ always_comb begin : for_some_reason_you_cant_assign_a_value_to_an_enum
     7'b0010111: decoded_op_type = OP_AUIPC;
     7'b1101111: decoded_op_type = OP_JAL  ;
     7'b1100111: decoded_op_type = OP_JALR ;
+    7'b0000000: decoded_op_type = OP_HALT ;
   endcase
 end
 
@@ -46,6 +58,7 @@ end
 always_ff @(posedge clk) begin : register_parsing
   if (rst) begin
     op_type <= 0;
+    halt <= 0;
     funct3_ltype <= 0;
     funct3_ritype <= 0;
     funct3_btype <= 0;
@@ -54,7 +67,7 @@ always_ff @(posedge clk) begin : register_parsing
     rd <= 0;
     rs1 <= 0;
     rs2 <= 0;
-	upimm[31:12] <= 0;
+    upimm[31:12] <= 0;
   end else if (ena) begin
     op_type <= decoded_op_type;
     case (decoded_op_type)
@@ -65,16 +78,21 @@ always_ff @(posedge clk) begin : register_parsing
         rs2 <= IR[24:20];
         funct7 <= IR[31:25];
       end
-      OP_ITYPE: begin
+      OP_ITYPE, OP_LTYPE: begin
         rd <= IR[11:7];
-        funct3_ritype <= IR[14:12];
+        // L-Type and I-Type are the same, just with different enums for funct3
+        if (decoded_op_type[4]) begin // I-Type
+          funct3_ritype <= IR[14:12];
+        end else begin // L-Type
+          funct3_ltype <= IR[14:12];
+        end
         rs1 <= IR[19:15];
         imm[10:0] <= IR[30:20];
         imm[31:11] <= IR[31]; // sign extension
       end
       OP_STYPE: begin
         imm[4:0] <= IR[11:7];
-        // funct3_stype <= IR[14:12]; // seemingly unused?
+        funct3_stype <= IR[14:12];
         rs1 <= IR[19:15];
         rs2 <= IR[24:20];
         imm[10:5] <= IR[30:25];
@@ -102,6 +120,10 @@ always_ff @(posedge clk) begin : register_parsing
         imm[10:1] <= IR[30:21];
         imm[31:20] <= IR[31]; // Sign extension
       end
+      OP_HALT: begin
+        halt <= 1;
+      end
+      default: `PANIC("Unknown op_type");
     endcase
   end
 end

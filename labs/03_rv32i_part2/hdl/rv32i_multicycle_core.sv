@@ -1,6 +1,14 @@
 `timescale 1ns/1ps
 `default_nettype none
 
+`ifndef PANIC
+  `ifdef SIMULATION
+    `define PANIC $error
+  `else
+    `define PANIC
+  `endif // SIMULATION
+`endif // PANIC
+
 `include "alu_types.sv"
 `include "rv32i_defines.sv"
 
@@ -29,10 +37,10 @@ Therefore:
 parameter PC_START_ADDRESS=0;
 
 /***************************************************************************************************
- * Standard control signals.
+ * Standard Control Signals
  **************************************************************************************************/
 input  wire clk, rst, ena; // <- worry about implementing the ena signal last.
-output logic instructions_completed;
+output logic instructions_completed; assign instructions_completed = halt;
 
 /***************************************************************************************************
  * Memory Interface
@@ -51,6 +59,18 @@ always_comb begin : mem_logic
       S_FETCH: begin
         mem_wr_ena = 0;
         mem_addr = PC;
+      end
+      S_LOAD: begin
+        mem_wr_ena = 0;
+        mem_addr = load_store_address;
+      end
+      S_STORE: begin
+        mem_wr_ena = 1;
+        mem_addr = load_store_address;
+        case (funct3_stype)
+          FUNCT3_STORE_SW: mem_wr_data = rs2_data;
+          default: `PANIC("Unknown funct3_stype");
+        endcase
       end
       default: mem_wr_ena = 0;
     endcase
@@ -109,7 +129,7 @@ register_file REGISTER_FILE(
   .rd_data0(rs1_data), .rd_data1(rs2_data)
 );
 
-always_comb begin : rd_write_control
+always_comb begin : register_write_control
   if (rst) begin
     rd_ena = 0;
     rd_data = 0;
@@ -126,6 +146,13 @@ always_comb begin : rd_write_control
         end
       endcase
     end
+    S_LOAD: case (funct3_ltype)
+      FUNCT3_LOAD_LW: begin
+        rd_ena = 1;
+        rd_data = mem_rd_data;
+      end
+      default: `PANIC("Unknown funct3_ltype");
+    endcase
     default: rd_ena = 0;
   endcase
 end
@@ -135,11 +162,13 @@ end
  **************************************************************************************************/
 
 op_type_t op_type;
+logic halt;
 wire [4:0] rd, rs1, rs2;
 
-funct3_ltype_t funct3_ltype;
 funct3_ritype_t funct3_ritype;
 funct3_btype_t funct3_btype;
+funct3_ltype_t funct3_ltype;
+funct3_stype_t funct3_stype;
 
 wire [6:0] funct7;
 
@@ -149,9 +178,10 @@ wire [4:0] uimm;
 instruction_decoder INSTRUCTION_DECODER(
   .ena(state == S_DECODE),
   .clk(clk), .rst(rst), .IR(IR),
-  .op_type(op_type), .rd(rd), .rs1(rs1), .rs2(rs2),
+  .op_type(op_type), .halt(halt), .rd(rd), .rs1(rs1), .rs2(rs2),
   .imm(imm), .uimm(uimm), .upimm(upimm),
-  .funct3_ltype(funct3_ltype), .funct3_ritype(funct3_ritype), .funct3_btype(funct3_btype),
+  .funct3_ritype(funct3_ritype), .funct3_btype(funct3_btype),
+  .funct3_stype(funct3_stype), .funct3_ltype(funct3_ltype),
   .funct7(funct7)
 );
 
@@ -171,22 +201,30 @@ alu_behavioural ALU (
 
 alu_control_t ri_type_alu_control;
 
-always_comb begin : ri_alu_control_logic
-  FUNCT3_ADD: begin
-    if (op_type == OP_RTYPE & funct7[5]) begin
-      alu_control = ALU_SUB;
-    end else begin
-      alu_control = ALU_ADD;
+always_comb begin : ri_type_alu_control_logic
+  if (rst) begin
+    ri_type_alu_control = ALU_ADD;
+  end else case (funct3_ritype)
+    FUNCT3_ADD: begin
+      // For some reason, verilog complains about not having an explicit cast if you use a ternary here
+      // (but also won't accept an explicit cast)
+      if (op_type == OP_RTYPE & funct7[5]) alu_control = ALU_SUB;
+      else alu_control = ALU_ADD;
     end
-  end
-  FUNCT3_SLL:  ri_type_alu_control = ALU_SLL;
-  FUNCT3_SLT:  ri_type_alu_control = ALU_SLT;
-  FUNCT3_SLTU: ri_type_alu_control = ALU_SLTU;
-  FUNCT3_XOR:  ri_type_alu_control = ALU_XOR;
-  FUNCT3_OR:   ri_type_alu_control = ALU_OR;
-  FUNCT3_AND:  ri_type_alu_control = ALU_AND;
-  FUNCT3_SHIFT_RIGHT: ri_type_alu_control = (funct7[5]) ? ALU_SRA : ALU_SRL;
-  default: panic = 1;
+    FUNCT3_SLL:  ri_type_alu_control = ALU_SLL;
+    FUNCT3_SLT:  ri_type_alu_control = ALU_SLT;
+    FUNCT3_SLTU: ri_type_alu_control = ALU_SLTU;
+    FUNCT3_XOR:  ri_type_alu_control = ALU_XOR;
+    FUNCT3_OR:   ri_type_alu_control = ALU_OR;
+    FUNCT3_AND:  ri_type_alu_control = ALU_AND;
+    FUNCT3_SHIFT_RIGHT: begin
+      // See above, using a ternary isn't valid here for some reason
+      if (funct7[5]) ri_type_alu_control = ALU_SRA;
+      else ri_type_alu_control = ALU_SRL;
+    end
+    // For some reason this always triggers at t = 0, so disabling
+    // default: `PANIC("Unknown funct3_ritype");
+  endcase
 end
 
 always_comb begin : alu_logic
@@ -226,7 +264,14 @@ always_comb begin : alu_logic
             alu_src_b = rs2_data;
             alu_control = ALU_ADD; // doesn't matter
           end
+          default: `PANIC("Unknown funct3_btype");
         endcase
+        OP_LTYPE, OP_STYPE: begin
+          alu_src_a = rs1_data;
+          alu_src_b = imm;
+          alu_control = ALU_ADD;
+        end
+        default: `PANIC("Unknown funct3_l/stype");
       endcase
     end
     S_BRANCH_JUMP: begin
@@ -245,11 +290,6 @@ end
 /***************************************************************************************************
  * CPU State
  **************************************************************************************************/
-logic panic;
-
-always_ff @(posedge clk) if (rst) begin
-  panic <= 0;
-end
 
 enum logic [3:0] {
   S_FETCH  = 0,
@@ -259,14 +299,18 @@ enum logic [3:0] {
   S_EXECUTE = 2,
   S_BRANCH_JUMP = 3,
   S_LOAD = 4,
+  S_STORE = 5,
+  S_HALT = 14,
   S_ERROR = 15
 } state;
 
 always_ff @(posedge clk) begin
   if (rst) begin
     state <= S_FETCH;
-  end else if (panic) begin
-    state <= S_ERROR;
+  end else if (halt) begin
+    $display("Halting!");
+    state <= S_HALT;
+    $finish;
   end else case (state)
     S_FETCH:   state <= S_DECODE;
     S_DECODE:  state <= S_EXECUTE;
@@ -274,10 +318,16 @@ always_ff @(posedge clk) begin
       case (op_type)
         OP_ITYPE, OP_RTYPE, OP_JAL, OP_JALR: state <= S_FETCH;
         OP_BTYPE: state <= (should_branch) ? S_BRANCH_JUMP : S_FETCH;
+        OP_LTYPE: state <= S_LOAD;
+        OP_STYPE: state <= S_STORE;
         default: state <= S_ERROR;
       endcase
     end
     S_BRANCH_JUMP: state <= S_FETCH;
+    S_LOAD: state <= S_FETCH;
+    S_STORE: state <= S_FETCH;
+    S_HALT: state <= S_HALT;   // never un-halt
+    S_ERROR: state <= S_ERROR; // we never leave S_ERROR
     default: state <= S_ERROR;
   endcase
 end
@@ -298,6 +348,22 @@ always_comb begin : branch_logic
     endcase
   end else begin
     should_branch = 0;
+  end
+end
+
+/***************************************************************************************************
+ * Store & Load
+ **************************************************************************************************/
+
+logic [31:0] load_store_address;
+
+always_ff @(posedge clk) begin : load_store_address_logic
+  if (rst) begin
+    load_store_address <= 0;
+  end else if ((state == S_EXECUTE) & ((op_type == OP_LTYPE) | (op_type == OP_STYPE))) begin
+    load_store_address <= alu_result;
+  end else begin
+    load_store_address <= 0;
   end
 end
 

@@ -12,6 +12,13 @@ import sys
 
 import rv32i
 
+try:
+    from bitstring import BitArray
+except:
+    raise Exception(
+        "Missing a library, try `sudo apt install python3-bitstring`"
+    )
+
 
 class AssemblyProgram:
     def __init__(self, start_address=0, labels=None):
@@ -106,6 +113,10 @@ class AssemblyProgram:
                 raise e
             address += 4
             output.append((bits, line))
+        output.append((
+            BitArray(length=32),  # zeroed by default
+            {'line_number': 'EOF', 'original': 'indicates end of program'}
+        ))
         # Only write the file if the above completes without errors
         with open(fn, "w") as f:
             address = 0
