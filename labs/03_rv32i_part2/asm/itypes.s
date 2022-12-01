@@ -1,5 +1,6 @@
 addi x1, x0, 17
 addi x2, x1, 17
+add  x3, x1, x2
 slli x2, x1, 4
 slti x3, x2, 1000
 sltiu x4, x2, 1000

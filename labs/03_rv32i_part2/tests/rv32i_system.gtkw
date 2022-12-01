@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
-[*] Tue Nov 29 06:34:21 2022
+[*] Thu Dec  1 00:22:18 2022
 [*]
 [dumpfile] "/Users/ariporad/Olin/Work/CompArch/repo/labs/03_rv32i_part2/rv32i_system.fst"
-[dumpfile_mtime] "Tue Nov 29 06:32:04 2022"
-[dumpfile_size] 8515
+[dumpfile_mtime] "Thu Dec  1 00:17:56 2022"
+[dumpfile_size] 6663
 [savefile] "/Users/ariporad/Olin/Work/CompArch/repo/labs/03_rv32i_part2/tests/rv32i_system.gtkw"
 [timestart] 0
 [size] 1728 1051
 [pos] -1 -1
-*-14.063686 15920 775000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-14.063686 77650 775000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] test_rv32i_system.
 [treeopen] test_rv32i_system.UUT.
 [treeopen] test_rv32i_system.UUT.CORE.
@@ -29,8 +29,6 @@ test_rv32i_system.UUT.CORE.state[3:0]
 @200
 -
 -PC
-@28
-test_rv32i_system.UUT.CORE.PC_ena
 @22
 test_rv32i_system.UUT.CORE.PC[31:0]
 test_rv32i_system.UUT.CORE.PC_old[31:0]
@@ -47,8 +45,6 @@ test_rv32i_system.UUT.CORE.alu_result[31:0]
 @200
 -
 -IR
-@28
-test_rv32i_system.UUT.CORE.IR_ena
 @4022
 ^>1 /Users/ariporad/Olin/Work/CompArch/repo/labs/03_rv32i_part2/gtkwave_filter.py
 test_rv32i_system.UUT.CORE.IR[31:0]
@@ -78,7 +74,6 @@ test_rv32i_system.UUT.CORE.decoded_op_type[6:0]
 @2028
 ^3 /Users/ariporad/Olin/Work/CompArch/repo/labs/03_rv32i_part2/tests/op_types.txt
 test_rv32i_system.UUT.CORE.op_type[6:0]
-@2029
 ^4 /Users/ariporad/Olin/Work/CompArch/repo/labs/03_rv32i_part2/tests/funct3_ritypes.txt
 test_rv32i_system.UUT.CORE.funct3_ritype[2:0]
 @c00420
@@ -139,6 +134,9 @@ test_rv32i_system.UUT.CORE.rs1_data[31:0]
 test_rv32i_system.UUT.CORE.rs2[4:0]
 @22
 test_rv32i_system.UUT.CORE.rs2_data[31:0]
+test_rv32i_system.UUT.CORE.REGISTER_FILE.x01[31:0]
+@23
+test_rv32i_system.UUT.CORE.REGISTER_FILE.x02[31:0]
 @200
 -
 -Memory
@@ -148,8 +146,5 @@ test_rv32i_system.UUT.CORE.mem_rd_data[31:0]
 test_rv32i_system.UUT.CORE.mem_wr_data[31:0]
 @28
 test_rv32i_system.UUT.CORE.mem_wr_ena
-@22
-test_rv32i_system.UUT.CORE.REGISTER_FILE.x01[31:0]
-test_rv32i_system.UUT.CORE.REGISTER_FILE.x02[31:0]
 [pattern_trace] 1
 [pattern_trace] 0
