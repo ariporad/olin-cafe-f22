@@ -36,11 +36,12 @@ class AssemblyProgram:
         line = line.strip()
         parsed["original"] = line
         line = re.sub("\s*#.*", "", line)  # Remove comments.
-        match = re.search("^(\w+):", line)
+        match = re.search("^([\w\(\)_]+):", line)
         if match:
             self.labels[match.group(1)] = self.address
-            line = re.sub("^(\w+):\s*", "", line)
+            line = re.sub("^([\w\(\)_]+):\s*", "", line)
             parsed["label"] = match.group(1)
+            print("Found Label:", parsed['label'])
         match = re.search("^(\w+)\s*(.*)", line)
         if not match:
             return -1
@@ -65,8 +66,13 @@ class AssemblyProgram:
             parsed["instruction"] = "xori"
             parsed["args"].append("-1")
         if parsed["instruction"] == "li":
-
-            raise NotImplemented("li is not supported")
+            print("WARNING: 32-bit li is not supported")
+            parsed["instruction"] = "addi"
+            parsed["args"] = [
+                parsed["args"][0],
+                "zero",
+                parsed["args"][1]
+            ]
         if parsed["instruction"] == "bgt":
             parsed["instruction"] = "blt"
             parsed["args"] = [
@@ -88,7 +94,7 @@ class AssemblyProgram:
         self.parsed_lines.append(parsed)
         return 0
 
-    def write_mem(self, fn, hex_notbin=True, disable_annotations=False):
+    def write_mem(self, fn, hex_notbin=True, disable_annotations=False, disable_sourcemaps=False):
         output = []
         address = 0
         for line in self.parsed_lines:
@@ -113,22 +119,39 @@ class AssemblyProgram:
                 raise e
             address += 4
             output.append((bits, line))
-        output.append((
-            BitArray(length=32),  # zeroed by default
-            {'line_number': 'EOF', 'original': 'indicates end of program'}
-        ))
         # Only write the file if the above completes without errors
+        source_map = []
         with open(fn, "w") as f:
             address = 0
             for bits, line in output:
                 annotation = f" // PC={hex(address)} line={line['line_number']}: {line['original']}"
                 if disable_annotations:
                     annotation = ""
+                if not disable_sourcemaps:
+                    source_map.append((address, line['line_number']))
                 if hex_notbin:
                     f.write(f"{bits.hex}{annotation}\n")
                 else:
                     f.write(bits.bin + "\n")
                 address += 4
+        if not disable_sourcemaps:
+            # FIXME: This is *highly* inefficient
+            with open("assembly_sourcemap.txt", 'w') as f:
+                print(self.labels.items())
+                for address, line_no in source_map:
+                    try:
+                        nearest_label = sorted(
+                            filter(
+                                lambda entry: entry[1] <= address,
+                                self.labels.items()
+                            ),
+                            key=lambda entry: entry[1],
+                            reverse=True
+                        )[0][0]
+                    except IndexError:
+                        nearest_label = "root"
+                    f.write(f"{address:08X} {line_no}: {nearest_label}\n")
+
         return 0
 
 
@@ -148,33 +171,43 @@ def main():
         default=False,
         help="Prints memh files without any annotations.",
     )
-
+    parser.add_argument(
+        "--disable_sourcemaps",
+        action="store_true",
+        default=False,
+        help="Don't emit a sourcemap filter file for GTK Wave"
+    )
     parser.add_argument(
         "-v",
         "--verbose",
         action="store_true",
+        default=os.environ.get('ASSEMBLER_VERBOSE', '0') == '1',
         help="increases verbosity of the script",
     )
     args = parser.parse_args()
+
     if not path.exists(args.input):
         raise Exception(f"input file {args.input} does not exist.")
     ap = AssemblyProgram()
     with open(args.input, "r") as f:
         for line in f:
             ap.parse_line(line)
+    ap.parsed_lines.append(
+        {'line_number': 'EOF', 'instruction': 'halt', 'args': [], 'original': ''}
+    )
     if args.verbose:
         print(f"Parsed {len(ap.parsed_lines)} instructions. Label table:")
         print(
             "  " + ",\n  ".join([f"{k} -> {ap.labels[k]}" for k in ap.labels])
         )
     if args.output:
-        sys.exit(
-            ap.write_mem(
-                args.output,
-                hex_notbin=not "memb" in args.output,
-                disable_annotations=args.disable_annotations,
-            )
+        exit_code = ap.write_mem(
+            args.output,
+            hex_notbin=not "memb" in args.output,
+            disable_annotations=args.disable_annotations,
+            disable_sourcemaps=args.disable_sourcemaps
         )
+        sys.exit(exit_code)
     sys.exit(0)
 
 

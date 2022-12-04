@@ -1,10 +1,22 @@
+call main
+halt
+
+func_eql:
+	li a0, 17
+	ret
+
+func_neq:
+	li a0, 34
+	ret
+
 main: 
-	addi x3, x0, 5
-	addi x1, x0, 2
-	addi x2, x0, 2
-	bne x1, x2, fail
-	jal x0, skip
-fail:
-	addi x3, x0, 10
-skip:
-	addi x4, x0, 14
+	addi s1, zero, 2
+	addi s2, zero, 3
+	bne s1, s2, call_func_neq
+	call func_eql
+	jal zero, after
+call_func_neq:
+	call func_neq
+after:
+	addi s1, zero, 3
+	halt

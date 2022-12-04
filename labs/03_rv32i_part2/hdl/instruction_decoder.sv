@@ -78,17 +78,17 @@ always_ff @(posedge clk) begin : register_parsing
         rs2 <= IR[24:20];
         funct7 <= IR[31:25];
       end
-      OP_ITYPE, OP_LTYPE: begin
+      OP_ITYPE, OP_LTYPE, OP_JALR: begin
         rd <= IR[11:7];
         // L-Type and I-Type are the same, just with different enums for funct3
-        if (decoded_op_type[4]) begin // I-Type
-          funct3_ritype <= IR[14:12];
-        end else begin // L-Type
-          funct3_ltype <= IR[14:12];
-        end
+        case (decoded_op_type)
+          OP_ITYPE: funct3_ritype <= IR[14:12];
+          OP_LTYPE: funct3_ltype <= IR[14:12];
+          // OP_JALR has no funct3
+        endcase
         rs1 <= IR[19:15];
         imm[10:0] <= IR[30:20];
-        imm[31:11] <= IR[31]; // sign extension
+        imm[31:11] <= {21{IR[31]}}; // Sign extension
       end
       OP_STYPE: begin
         imm[4:0] <= IR[11:7];
@@ -96,7 +96,7 @@ always_ff @(posedge clk) begin : register_parsing
         rs1 <= IR[19:15];
         rs2 <= IR[24:20];
         imm[10:5] <= IR[30:25];
-        imm[31:11] <= IR[31]; // sign extension
+        imm[31:11] <= {21{IR[31]}}; // Sign extension
       end
       OP_BTYPE: begin
         imm[0] <= 1'b0; // LSB is always 0
@@ -106,19 +106,19 @@ always_ff @(posedge clk) begin : register_parsing
         rs1 <= IR[19:15];
         rs2 <= IR[24:20];
         imm[10:5] <= IR[30:25];
-        imm[31:12] <= IR[31]; // Sign Extension
+        imm[31:12] <= {20{IR[31]}}; // Sign Extension
       end
       OP_LUI, OP_AUIPC: begin // U-Type
         rd <= IR[11:7];
         upimm[31:12] <= IR[31:12];
       end
-      OP_JAL, OP_JALR: begin
+      OP_JAL: begin
         rd <= IR[11:7];
         imm[0] <= 1'b0; // LSB is always 0
         imm[19:12] <= IR[19:12];
         imm[11] <= IR[20];
         imm[10:1] <= IR[30:21];
-        imm[31:20] <= IR[31]; // Sign extension
+        imm[31:20] <= {12{IR[31]}}; // Sign extension
       end
       OP_HALT: begin
         halt <= 1;

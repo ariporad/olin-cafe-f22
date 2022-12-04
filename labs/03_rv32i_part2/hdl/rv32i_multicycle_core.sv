@@ -88,6 +88,11 @@ always_ff @(posedge clk) begin: PC_logic
   endcase
 end
 
+`ifdef SIMULATION
+logic [31:0] line_no;
+always_comb line_no = PC_old >> 2;
+`endif
+
 /***************************************************************************************************
  * Instruction Register
  **************************************************************************************************/
@@ -109,7 +114,7 @@ logic rd_ena;
 logic [31:0] rd_data;
 wire [31:0] rs1_data, rs2_data;
 register_file REGISTER_FILE(
-  .clk(clk), 
+  .clk(clk), .rst(rst),
   .wr_ena(rd_ena), .wr_addr(rd), .wr_data(rd_data),
   .rd_addr0(rs1), .rd_addr1(rs2),
   .rd_data0(rs1_data), .rd_data1(rs2_data)

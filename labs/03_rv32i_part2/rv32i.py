@@ -293,8 +293,10 @@ def line_to_bits(line, labels={}, address=0):
         check_imm(upimm, 20)
         upimm = BitArray(int=int(upimm), length=20)
         bits = upimm + rd + op_codes[instruction]
-
-    if not bits:
+    if instruction == 'halt':
+        bits = BitArray(length=32)  # zeroed by default
+        print("HALT:", not not bits)
+    if bits is None:
         raise LineException(
             f"Instruction {instruction} was not handled.",
         )
@@ -344,10 +346,10 @@ def bits_to_line(bits, labels=None):
     if bits.length != 32:
         raise ValueError("instruction must be 32 bits")
     op_code = bits[25:]
-    rd = bits_to_register(bits[31 - 11 : 31 - 7 + 1])
-    rs1 = bits_to_register(bits[31 - 19 : 31 - 15 + 1])
-    rs2 = bits_to_register(bits[31 - 24 : 31 - 20 + 1])
-    funct3 = bits[31 - 14 : 31 - 12 + 1]
+    rd = bits_to_register(bits[31 - 11: 31 - 7 + 1])
+    rs1 = bits_to_register(bits[31 - 19: 31 - 15 + 1])
+    rs2 = bits_to_register(bits[31 - 24: 31 - 20 + 1])
+    funct3 = bits[31 - 14: 31 - 12 + 1]
     imm12 = bits[0:12]
     op = None
     funct7 = bits[0:7]
@@ -407,7 +409,7 @@ def bits_to_line(bits, labels=None):
             op = stype_funct3_mapping[funct3.bin]
         except KeyError:
             raise ValueError(f"Invalid s-type funct3: {funct3.bin}")
-        imm12 = bits[31 - 31 : 31 - 25 + 1] + bits[31 - 11 : 31 - 11 + 5]
+        imm12 = bits[31 - 31: 31 - 25 + 1] + bits[31 - 11: 31 - 11 + 5]
         return f"{op} {rs2}, {imm12.int}({rs1})"
     if op_code.bin == "1100011":  # b-type
         try:
@@ -416,9 +418,9 @@ def bits_to_line(bits, labels=None):
             raise ValueError(f"Invalid b-type funct3: {funct3.bin}")
         imm12 = BitArray(length=12)
         imm12[0] = bits[0]
-        imm12[12 - 10 : 12 - 5 + 1] = bits[1:7]
-        imm12[12 - 4 : 12 - 1 + 1] = bits[31 - 11 : 31 - 7 + 1]
-        imm12[1] = bits[31 - 7 : 31 - 7 + 1]
+        imm12[12 - 10: 12 - 5 + 1] = bits[1:7]
+        imm12[12 - 4: 12 - 1 + 1] = bits[31 - 11: 31 - 7 + 1]
+        imm12[1] = bits[31 - 7: 31 - 7 + 1]
         address = imm12
         if labels is None:
             return f"{op} {rs1}, {rs2}, {address.uint}"
