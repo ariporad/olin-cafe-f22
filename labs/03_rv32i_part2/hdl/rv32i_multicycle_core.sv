@@ -203,8 +203,8 @@ always_comb begin : ri_type_alu_control_logic
     FUNCT3_ADD: begin
       // For some reason, verilog complains about not having an explicit cast if you use a ternary here
       // (but also won't accept an explicit cast)
-      if (op_type == OP_RTYPE & funct7[5]) alu_control = ALU_SUB;
-      else alu_control = ALU_ADD;
+      if (op_type == OP_RTYPE & funct7[5]) ri_type_alu_control = ALU_SUB;
+      else ri_type_alu_control = ALU_ADD;
     end
     FUNCT3_SLL:  ri_type_alu_control = ALU_SLL;
     FUNCT3_SLT:  ri_type_alu_control = ALU_SLT;

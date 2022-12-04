@@ -36,10 +36,10 @@ class AssemblyProgram:
         line = line.strip()
         parsed["original"] = line
         line = re.sub("\s*#.*", "", line)  # Remove comments.
-        match = re.search("^([\w\(\)_]+):", line)
+        match = re.search("^([\w\(\)_\.]+):", line)
         if match:
             self.labels[match.group(1)] = self.address
-            line = re.sub("^([\w\(\)_]+):\s*", "", line)
+            line = re.sub("^([\w\(\)_\.]+):\s*", "", line)
             parsed["label"] = match.group(1)
             print("Found Label:", parsed['label'])
         match = re.search("^(\w+)\s*(.*)", line)

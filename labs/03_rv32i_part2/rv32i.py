@@ -245,7 +245,7 @@ def line_to_bits(line, labels={}, address=0):
                 f"label '{label}' was not in the stored table.",
             )
         offset = int(labels[label]) - address
-        # offset = offset >> 1  # TODO(avinash) double check
+        offset = offset >> 1
         check_imm(offset, 12)
         imm12 = BitArray(int=offset, length=12)
         print("#" * 48)
@@ -256,13 +256,19 @@ def line_to_bits(line, labels={}, address=0):
             f"original offset = {int(labels[label]) - address} "
         )
         print("#" * 48 + "\n")
+
+        # Verilog: 12 11 10  9  8  7  6  5  4  3  2  1
+        #  Python:  0  1  2  3  4  5  6  7  8  9 10 11
+
+        print("BRANCH: imm[1:2] =", imm12[1:2])
+
         bits = (
             imm12[0:1]
             + imm12[2:8]
             + rs2
             + rs1
             + funct3_codes[instruction]
-            + imm12[7:11]
+            + imm12[8:12]
             + imm12[1:2]
             + op_codes[instruction]
         )
