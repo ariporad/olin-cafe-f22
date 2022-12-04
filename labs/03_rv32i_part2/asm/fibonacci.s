@@ -7,7 +7,7 @@
 # }
 # 
 # int main() {
-#     return fibonacci(3);
+#     return fibonacci(10);
 # }
 
 PREAMBLE: # This is the only thing added from CE
@@ -28,22 +28,22 @@ fibonacci(int):                          # @fibonacci(int)
         sw      a0, -16(s0)
         lw      a1, -16(s0)
         li      a0, 0
-        blt     a0, a1, .LBB0_2
-        j       .LBB0_1
-.LBB0_1:
+        blt     a0, a1, .gt_zero
+        j       .ret_zero
+.ret_zero:
         li      a0, 0
         sw      a0, -12(s0)
-        j       .LBB0_5
-.LBB0_2:
+        j       .ret
+.gt_zero:
         lw      a0, -16(s0)
         li      a1, 1
-        bne     a0, a1, .LBB0_4
-        j       .LBB0_3
-.LBB0_3:
+        bne     a0, a1, .gt_1
+        j       .ret_1
+.ret_1:
         li      a0, 1
         sw      a0, -12(s0)
-        j       .LBB0_5
-.LBB0_4:
+        j       .ret
+.gt_1:
         lw      a0, -16(s0)
         addi    a0, a0, -1
         call    fibonacci(int)
@@ -55,8 +55,8 @@ fibonacci(int):                          # @fibonacci(int)
         lw      a0, -20(s0)                     # 4-byte Folded Reload
         add     a0, a0, a1
         sw      a0, -12(s0)
-        j       .LBB0_5
-.LBB0_5:
+        j       .ret
+.ret:
         lw      a0, -12(s0)
         lw      ra, 28(sp)                      # 4-byte Folded Reload
         lw      s0, 24(sp)                      # 4-byte Folded Reload
@@ -69,7 +69,7 @@ main:                                   # @main
         addi    s0, sp, 16
         li      a0, 0
         sw      a0, -12(s0)
-        li      a0, 3
+        li      a0, 10
         call    fibonacci(int)
         lw      ra, 12(sp)                      # 4-byte Folded Reload
         lw      s0, 8(sp)                       # 4-byte Folded Reload

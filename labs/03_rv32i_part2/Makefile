@@ -45,7 +45,7 @@ test_rv32i_%: tests/test_rv32i_system.sv asm/%.memh ${RV32I_SRCS}
 	${IVERILOG} -DINITIAL_INST_MEM=\"asm/$*.memh\" -DMAX_CYCLES="100" -s test_rv32i_system -o test_rv32i_system.bin  tests/test_rv32i_system.sv ${RV32I_SRCS} && ${VVP} test_rv32i_system.bin ${VVP_POST}
 
 test_%: tests/test_rv32i_system.sv asm/%.memh ${RV32I_SRCS}
-	${IVERILOG} -DINITIAL_INST_MEM=\"asm/$*.memh\" -DMAX_CYCLES="10000" -s test_rv32i_system -o test_rv32i_system.bin  tests/test_rv32i_system.sv ${RV32I_SRCS} && ${VVP} test_rv32i_system.bin ${VVP_POST}
+	${IVERILOG} -DINITIAL_INST_MEM=\"asm/$*.memh\" -DMAX_CYCLES="100000" -s test_rv32i_system -o test_rv32i_system.bin  tests/test_rv32i_system.sv ${RV32I_SRCS} && ${VVP} test_rv32i_system.bin ${VVP_POST}
 
 waves_%: test_%
 	gtkwave rv32i_system.fst -a tests/rv32i_system.gtkw

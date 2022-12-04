@@ -13,3 +13,4 @@ vivado*.str
 .Xil
 __pycache__
 asm/*.memh
+assembly_sourcemap.txt

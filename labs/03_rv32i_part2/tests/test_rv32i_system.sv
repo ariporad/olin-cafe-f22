@@ -45,7 +45,7 @@ initial begin
   repeat (`MAX_CYCLES) @(posedge sysclk);
   @(negedge sysclk);
   
-  $display("Ran %d cycles, finishing.", `MAX_CYCLES);
+  $display("WARNING: CPU ran %d cycles without halting. This either means that there is an infinite loop, or that you should increase MAX_CYCLES.", `MAX_CYCLES);
 
   UUT.MMU.dump_memory("mmu");
 
