@@ -279,13 +279,10 @@ def line_to_bits(line, labels={}, address=0):
             raise LineException(
                 f"label '{label}' was not in the stored table.",
             )
-        offset = (labels[label] - address) >> 1  # TODO(avinash) check
-        # {{12{IR[31]}}, IR[19:12], IR[20], IR[30:21], 1'b0};
-        #
+        offset = (labels[label] - address) >> 1
         check_imm(offset, 20)
         imm = BitArray(int=offset, length=20)
 
-        # IR [31|30:21|20|
         # imm[20|10:1|11|19:12] in normal bit order, this library makes us flip that
         # imm20,10:1,11,19:12
         imm20 = imm[0:1] + imm[10:20] + imm[9:10] + imm[1:9]
@@ -430,7 +427,7 @@ def bits_to_line(bits, labels=None):
         address = imm12
         if labels is None:
             return f"{op} {rs1}, {rs2}, {address.uint}"
-        address = address.int * 2  # TODO(avinash) check?
+        address = address.int * 2
         if address not in labels:
             labels[address] = f"LABEL_{len(labels)}"
         return f"{op} {rs1}, {rs2}, {labels[address]} # {labels[address]} <- {address}"
@@ -459,13 +456,6 @@ def bits_to_line(bits, labels=None):
             bits[1:11],  # 30:25
         ]
         imm20 = bits[0:1] + bits[12:20] + bits[11:12] + bits[1:11]
-        """
-        print("#" * 32)
-        print(tmp)
-        print(f"{imm20.bin} -> {imm20.int} len = {len(imm20)}")
-        print("#" * 32)
-        print("\n")
-        """
         address = imm20.int * 2
         if address % 4:
             raise Exception(
