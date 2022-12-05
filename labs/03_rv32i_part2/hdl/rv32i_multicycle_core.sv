@@ -25,7 +25,7 @@ parameter PC_START_ADDRESS=0;
  * Standard Control Signals
  **************************************************************************************************/
 input  wire clk, rst, ena; // <- worry about implementing the ena signal last.
-output logic instructions_completed; assign instructions_completed = halt;
+output logic instructions_completed; assign instructions_completed = (state == S_HALT);
 
 /***************************************************************************************************
  * Memory Interface
@@ -139,6 +139,10 @@ always_comb begin : register_write_control
           rd_ena = 1;
           rd_data = upimm;
         end
+        default: begin
+          rd_ena = 0;
+          rd_data = 0;
+        end
       endcase
     end
     S_LOAD: case (funct3_ltype)
@@ -148,7 +152,10 @@ always_comb begin : register_write_control
       end
       default: `PANIC("Unknown funct3_ltype");
     endcase
-    default: rd_ena = 0;
+    default: begin
+      rd_ena = 0;
+      rd_data = 0;
+    end
   endcase
 end
 
@@ -157,13 +164,13 @@ end
  **************************************************************************************************/
 
 op_type_t op_type;
-logic halt;
 wire [4:0] rd, rs1, rs2;
 
 funct3_ritype_t funct3_ritype;
 funct3_btype_t funct3_btype;
 funct3_ltype_t funct3_ltype;
 funct3_stype_t funct3_stype;
+funct3_debug_t funct3_debug;
 
 wire [6:0] funct7;
 
@@ -173,11 +180,11 @@ wire [4:0] uimm;
 instruction_decoder INSTRUCTION_DECODER(
   .ena(state == S_DECODE),
   .clk(clk), .rst(rst), .IR(IR),
-  .op_type(op_type), .halt(halt), .rd(rd), .rs1(rs1), .rs2(rs2),
+  .op_type(op_type), .rd(rd), .rs1(rs1), .rs2(rs2),
   .imm(imm), .uimm(uimm), .upimm(upimm),
   .funct3_ritype(funct3_ritype), .funct3_btype(funct3_btype),
   .funct3_stype(funct3_stype), .funct3_ltype(funct3_ltype),
-  .funct7(funct7)
+  .funct3_debug(funct3_debug), .funct7(funct7)
 );
 
 /***************************************************************************************************
@@ -328,10 +335,6 @@ always_ff @(posedge clk) begin
     state <= S_FETCH;
   end else if (~ena) begin
     // Do nothing if disabled
-  end else if (halt) begin
-    $display("Halting!");
-    state <= S_HALT;
-    $finish;
   end else case (state)
     S_FETCH:   state <= S_DECODE;
     S_DECODE:  state <= S_EXECUTE;
@@ -341,14 +344,23 @@ always_ff @(posedge clk) begin
         OP_BTYPE: state <= (should_branch) ? S_BRANCH_JUMP : S_FETCH;
         OP_LTYPE: state <= S_LOAD;
         OP_STYPE: state <= S_STORE;
+        OP_DEBUG: case (funct3_debug)
+          FUNCT3_DEBUG_HALT: state <= S_HALT;
+          default: `PANIC("Unknown funct3_debug!");
+        endcase
         default: state <= S_ERROR;
       endcase
     end
     S_BRANCH_JUMP: state <= S_FETCH;
     S_LOAD: state <= S_FETCH;
     S_STORE: state <= S_FETCH;
-    S_HALT: state <= S_HALT;   // never un-halt
     S_ERROR: state <= S_ERROR; // we never leave S_ERROR
+    // This is a little different because we do synchronous things in simulation
+    S_HALT: begin
+      state <= S_HALT;   // never un-halt
+      $display("Halting! Program Returned: %d", rs2_data);
+      $finish;
+    end
     default: state <= S_ERROR;
   endcase
 end

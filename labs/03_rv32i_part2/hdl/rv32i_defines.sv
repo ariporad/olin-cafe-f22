@@ -15,7 +15,7 @@ typedef enum logic [6:0] {
   OP_AUIPC = 7'b0010111, // U-Type
   OP_JAL   = 7'b1101111, // J-Type
   OP_JALR  = 7'b1100111, // J-Type/R-Type
-  OP_HALT  = 7'b0000000  // Custom: indicates end of program
+  OP_DEBUG  = 7'b0000000  // Custom, same format as I-Type
 } op_type_t;
 
 typedef enum logic [2:0] {
@@ -51,6 +51,10 @@ typedef enum logic [2:0] {
   FUNCT3_STORE_SH  = 3'b001,
   FUNCT3_STORE_SW  = 3'b010
 } funct3_stype_t;
+
+typedef enum logic [2:0] {
+  FUNCT3_DEBUG_HALT  = 3'b000
+} funct3_debug_t;
 
 function string op_name(logic [6:0] op);
   case(op)
