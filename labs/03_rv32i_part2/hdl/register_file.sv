@@ -2,7 +2,7 @@
 `timescale 1ns/1ps
 
 module register_file(
-  clk, rst, // wtf, no rst?  // avi - makes debugging register writes easier
+  clk, rst,
   wr_ena, wr_addr, wr_data,
   rd_addr0, rd_data0,
   rd_addr1, rd_data1
@@ -177,7 +177,10 @@ end
 decoder_5_to_32 WR_ENA_DECODER(.ena(wr_ena), .in(wr_addr), .out(wr_enas));
 `endif //STRUCTURAL_DECODER
 
-
+// Provide an argument to main() by defining a macro
+`ifndef ARGV
+  `define ARGV 32'd0
+`endif // ARGV
 
 
 // instantiate registers:
@@ -191,7 +194,8 @@ register #(.N(32)) r_x06(.clk(clk), .rst(rst), .q(x06), .d(wr_data), .ena(wr_ena
 register #(.N(32)) r_x07(.clk(clk), .rst(rst), .q(x07), .d(wr_data), .ena(wr_enas[07]));
 register #(.N(32)) r_x08(.clk(clk), .rst(rst), .q(x08), .d(wr_data), .ena(wr_enas[08]));
 register #(.N(32)) r_x09(.clk(clk), .rst(rst), .q(x09), .d(wr_data), .ena(wr_enas[09]));
-register #(.N(32)) r_x10(.clk(clk), .rst(rst), .q(x10), .d(wr_data), .ena(wr_enas[10]));
+// x10 (a0) gets special treatment as the program argument
+register #(.N(32), .RESET(`ARGV)) r_x10(.clk(clk), .rst(rst), .q(x10), .d(wr_data), .ena(wr_enas[10]));
 register #(.N(32)) r_x11(.clk(clk), .rst(rst), .q(x11), .d(wr_data), .ena(wr_enas[11]));
 register #(.N(32)) r_x12(.clk(clk), .rst(rst), .q(x12), .d(wr_data), .ena(wr_enas[12]));
 register #(.N(32)) r_x13(.clk(clk), .rst(rst), .q(x13), .d(wr_data), .ena(wr_enas[13]));

@@ -1,13 +1,13 @@
-# Generated from the following, on Compiler Explorer:
-#
+# Generated from the following, on Compiler Explorer. Unmodified except for more descriptive labels.
+# 
 # int fibonacci(int n) {
 #     if (n <= 0) return 0;
 #     if (n == 1) return 1;
 #     return fibonacci(n-1) + fibonacci(n-2);
 # }
 # 
-# int main() {
-#     return fibonacci(10);
+# int main(int n) {
+#     return fibonacci(n);
 # }
 
 PREAMBLE: # This is the only thing added from CE
@@ -67,9 +67,10 @@ main:                                   # @main
         sw      ra, 12(sp)                      # 4-byte Folded Spill
         sw      s0, 8(sp)                       # 4-byte Folded Spill
         addi    s0, sp, 16
-        li      a0, 0
-        sw      a0, -12(s0)
-        li      a0, 10
+        li      a1, 0
+        sw      a1, -12(s0)
+        sw      a0, -16(s0)
+        lw      a0, -16(s0)
         call    fibonacci(int)
         lw      ra, 12(sp)                      # 4-byte Folded Reload
         lw      s0, 8(sp)                       # 4-byte Folded Reload
