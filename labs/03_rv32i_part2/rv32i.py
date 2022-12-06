@@ -58,6 +58,38 @@ def bits_to_register(bits):
     return register_names[bits.uint][0]
 
 
+def parse_int_immediate(imm):  # TODO: use this consistently
+    """
+    Parse all valid number literals (0x for hex, 0b for binary, etc.). Does not parse labels.
+    Returns signed values.
+
+    I got this spec from here, which may or may not be correct--but it seems reasonable:
+    https://www.eecs.yorku.ca/teaching/docs/2021/RVS-Assembler.pdf
+    """
+    if isinstance(imm, int):
+        return imm
+    assert isinstance(imm, str), f"Unknown type for imm: {type(imm)} ({imm})"
+
+    imm = imm.strip().lower()
+    if imm.startswith('0x'):  # hex
+        return int(imm[2:], 16)
+    elif imm.startswith('0b'):  # binary
+        return int(imm[2:], 2)
+    elif imm.startswith('0'):  # octal
+        return int(imm, 8)
+    else:  # decimal
+        return int(imm)
+
+
+class LineException(Exception):
+    pass
+
+
+def check_imm(imm, bits):
+    if imm >= 2 ** (bits - 1) or imm < -(2 ** (bits - 1)):
+        raise LineException(f"Immediate {imm} does not fit into {bits} bits.")
+
+
 rtypes = [
     "add",
     "sub",
@@ -98,7 +130,24 @@ utypes = ["lui", "auipc"]
 def pseudo_instruction_li(rd, expression):
     # TODO: Support 32-bit li
     print("WARNING: 32-bit li is not supported")
-    return 'addi', [rd, 'zero', expression]
+    imm = parse_int_immediate(expression)
+    try:
+        check_imm(imm, 12)
+        return 'addi', [rd, 'zero', expression]
+    except LineException:  # need to do a full 32-bit li
+        # NOTE: addi does sign extension, so we need to be clever here. If the MSB is high, it will
+        # think imm12 is negative (resulting in a net change of -4096). Adding 1 to upimm will add
+        # 4096, thereby cancelling it out.
+        # Credit: https://stackoverflow.com/a/59546567
+        imm12 = imm & 0xFFF
+        upimm = imm >> 12
+        if imm12 >= 0x800:  # MSB is high
+            imm12 = -1  # This will be 0xFFF
+            upimm += 1
+        return [
+            ('lui', [rd, upimm]),
+            ('addi', [rd, rd, imm12])
+        ]
 
 
 def pseudo_instruction_call(label):
@@ -203,15 +252,6 @@ for i in ["or", "ori", "bltu"]:
     funct3_codes[i] = BitArray("0b110")
 for i in ["and", "andi", "bgeu"]:
     funct3_codes[i] = BitArray("0b111")
-
-
-class LineException(Exception):
-    pass
-
-
-def check_imm(imm, bits):
-    if imm >= 2 ** (bits - 1) or imm < -(2 ** (bits - 1)):
-        raise LineException(f"Immediate {imm} does not fit into {bits} bits.")
 
 
 def line_to_bits(line, labels={}, address=0):

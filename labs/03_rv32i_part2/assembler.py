@@ -59,10 +59,27 @@ class AssemblyProgram:
 
         # Handle psuedo-instructions.
         if parsed['instruction'] in rv32i.PSEUDO_INSTRUCTIONS:
-            parsed['instruction'], parsed['args'] = \
+            pseudo_result = \
                 rv32i.PSEUDO_INSTRUCTIONS[parsed['instruction']](
                     *parsed["args"]
-            )
+                )
+
+            # NOTE: pseudo_result can either be a tuple in the form ('inst', [arg1, arg2]) or a list
+            # of tuples like that. We need to handle both cases
+
+            # if just one returned instruction
+            if not isinstance(pseudo_result[0], tuple):
+                parsed['instruction'], parsed['args'] = pseudo_result
+            else:  # otherwise, handle multiple
+                for i, (instruction, args) in enumerate(pseudo_result, start=1):
+                    pseudo_parsed = parsed.copy()
+                    # Each part of a pseudo-instruction is +0.1 to the line number
+                    pseudo_parsed['line_number'] += i / 10
+                    pseudo_parsed['instruction'] = instruction
+                    pseudo_parsed['args'] = args
+                    self.address += 4
+                    self.parsed_lines.append(pseudo_parsed)
+                return 0  # have to return so we don't append parsed
 
         self.address += 4
         self.parsed_lines.append(parsed)
