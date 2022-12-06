@@ -18,6 +18,10 @@ RV32I_SRCS=${RFILE_SRCS} ${ALU_SRCS} ${MMU_SRCS} hdl/rv32i_defines.sv hdl/rv32i_
 %.memh : %.s assembler.py rv32i.py
 	./assembler.py $< -o $@
 
+# Compile C files
+asm/%.s : csrc/%.c riscv_gcc_docker.sh
+	./riscv_gcc_docker.sh -march=rv32i -mabi=ilp32 -S -o ./asm/$*.s ./csrc/$*.c
+
 test_register_file: tests/test_register_file.sv ${RFILE_SRCS}
 	${IVERILOG} -o test_register_file.bin $^ && ${VVP} test_register_file.bin ${VVP_POST}
 
