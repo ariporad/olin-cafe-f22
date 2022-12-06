@@ -1,5 +1,7 @@
 int fibonacci(int n)
 {
+    static int count = 0;
+    count += 1;
     if (n <= 0)
         return 0;
     if (n == 1)

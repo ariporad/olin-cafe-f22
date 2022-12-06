@@ -94,17 +94,77 @@ btypes = ["beq", "bne", "blt", "bge", "bltu", "bgeu"]
 jtypes = ["jal"]
 utypes = ["lui", "auipc"]
 
-psuedo_instructions = [
-    "nop",
-    "j",
-    "jr",
-    "mv",
-    "not",
-    "bgt",
-    "bgez",
-    "call",
-    "ret",
-]
+
+def pseudo_instruction_li(rd, expression):
+    # TODO: Support 32-bit li
+    print("WARNING: 32-bit li is not supported")
+    return 'addi', [rd, 'zero', expression]
+
+
+def pseudo_instruction_call(label):
+    print("WARNING: call only works with nearby functions")
+    return 'jal', ['ra', label]
+
+
+# Table from: https://michaeljclark.github.io/asm.html
+PSEUDO_INSTRUCTIONS = {
+    # No operation
+    "nop": lambda: ("addi", ["zero", "zero", 0]),
+    # Copy register
+    "mv": lambda rd, rs1: ("addi", [rd, rs1, 0]),
+    # One's complement
+    "not": lambda rd, rs1: ("xori", [rd, rs1, -1]),
+    # Two's complement
+    "neg": lambda rd, rs1: ("sub", [rd, "zero", rs1]),
+    # Two's complement Word
+    "negw": lambda rd, rs1: ("subw", [rd, "zero", rs1]),
+    # Set if = zero
+    "seqz": lambda rd, rs1: ("sltiu", [rd, rs1, 1]),
+    # Set if ≠ zero
+    "snez": lambda rd, rs1: ("sltu", [rd, "zero", rs1]),
+    # Set if < zero
+    "sltz": lambda rd, rs1: ("slt", [rd, rs1, "zero"]),
+    # Set if > zero
+    "sgtz": lambda rd, rs1: ("slt", [rd, "zero", rs1]),
+    # Branch if = zero
+    "beqz": lambda rs1, offset: ("beq", [rs1, "zero", offset]),
+    # Branch if ≠ zero
+    "bnez": lambda rs1, offset: ("bne", [rs1, "zero", offset]),
+    # Branch if ≤ zero
+    "blez": lambda rs1, offset: ("bge", ["zero", rs1, offset]),
+    # Branch if ≥ zero
+    "bgez": lambda rs1, offset: ("bge", [rs1, "zero", offset]),
+    # Branch if < zero
+    "bltz": lambda rs1, offset: ("blt", [rs1, "zero", offset]),
+    # Branch if > zero
+    "bgtz": lambda rs1, offset: ("blt", ["zero", rs1, offset]),
+    # Branch if >
+    "bgt": lambda rs, rt, offset: ("blt", [rt, rs, offset]),
+    # Branch if ≤
+    "ble": lambda rs, rt, offset: ("bge", [rt, rs, offset]),
+    # Branch if >, unsigned
+    "bgtu": lambda rs, rt, offset: ("bltu", [rt, rs, offset]),
+    # Branch if ≤, unsigned
+    "bleu": lambda rs, rt, offset: ("bltu", [rt, rs, offset]),
+    # Jump
+    "j": lambda offset: ("jal", ["zero", offset]),
+    # Jump register
+    # NB: Other table said this should be jal x1, offset
+    "jr": lambda offset: ("jalr", ["zero", offset, 0]),
+    # Return from subroutine
+    "ret": lambda: ("jalr", ["zero", "ra", 0]),
+    # Call a function
+    "call": pseudo_instruction_call,
+
+    # Load immediate
+    "li": pseudo_instruction_li,
+    # Load address
+    "la": lambda rd, symbol: None  # TODO
+
+    # TODO: What is this?
+    # Sign extend Word
+    # "sext.w": lambda rd, rs1: ("addiw", [rd, rs, 0]),
+}
 
 op_codes = {}
 for i in rtypes:
@@ -163,7 +223,13 @@ def line_to_bits(line, labels={}, address=0):
             raise LineException(
                 "R-type instructions require 3 arguments.",
             )
-        rd, rs1, rs2 = [register_to_bits(a) for a in args]
+
+        try:
+            rd, rs1, rs2 = [register_to_bits(a) for a in args]
+        except KeyError:
+            line = line.copy()
+            line['instruction'] += 'i'
+            return line_to_bits(line, labels, address)
 
         funct7 = BitArray(length=7)
         if instruction in ["sub", "sra"]:
