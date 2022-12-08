@@ -76,7 +76,6 @@ always_ff @(posedge clk) begin: PC_logic
     S_EXECUTE: begin
       case (op_type)
         OP_JAL, OP_JALR: PC <= alu_result;
-        OP_AUIPC: PC <= alu_result;
         // default: PC remains unchanged
       endcase
     end
@@ -122,7 +121,7 @@ always_comb begin : register_write_control
   end else case (state)
     S_EXECUTE: begin
       case (op_type)
-        OP_ITYPE, OP_RTYPE: begin
+        OP_ITYPE, OP_RTYPE, OP_AUIPC: begin
           rd_ena = 1;
           rd_data = alu_result;
         end
