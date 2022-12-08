@@ -1,14 +1,6 @@
 `timescale 1ns/1ps
 `default_nettype none
 
-`ifndef PANIC
-  `ifdef SIMULATION
-    `define PANIC $error
-  `else
-    `define PANIC
-  `endif // SIMULATION
-`endif // PANIC
-
 `include "alu_types.sv"
 `include "rv32i_defines.sv"
 
@@ -18,18 +10,20 @@ module rv32i_multicycle_core(
   PC,
   instructions_completed
 );
-
-parameter PC_START_ADDRESS=0;
-
 /***************************************************************************************************
  * Standard Control Signals
  **************************************************************************************************/
-input  wire clk, rst, ena; // <- worry about implementing the ena signal last.
+
+parameter PC_START_ADDRESS=0;
+
+input   wire clk, rst, ena;
 output logic instructions_completed; assign instructions_completed = (state == S_HALT);
+
 
 /***************************************************************************************************
  * Memory Interface
  **************************************************************************************************/
+
 output logic [31:0] mem_addr, mem_wr_data;
 input   wire [31:0] mem_rd_data;
 output logic mem_wr_ena;
@@ -54,7 +48,7 @@ always_comb begin : mem_logic
         mem_addr = load_store_address;
         case (funct3_stype)
           FUNCT3_STORE_SW: mem_wr_data = rs2_data;
-          default: `PANIC("Unknown funct3_stype");
+          default: `PANIC("Unsupported funct3_stype");
         endcase
       end
       default: mem_wr_ena = 0;
@@ -62,9 +56,11 @@ always_comb begin : mem_logic
   end
 end
 
+
 /***************************************************************************************************
  * Program Counter
  **************************************************************************************************/
+
 output logic [31:0] PC;
 logic [31:0] PC_old;
 
@@ -88,14 +84,11 @@ always_ff @(posedge clk) begin: PC_logic
   endcase
 end
 
-`ifdef SIMULATION
-logic [31:0] line_no;
-always_comb line_no = PC_old >> 2;
-`endif
 
 /***************************************************************************************************
  * Instruction Register
  **************************************************************************************************/
+
 logic [31:0] IR;
 
 always_ff @(posedge clk) begin
@@ -107,9 +100,11 @@ always_ff @(posedge clk) begin
   endcase
 end
 
+
 /***************************************************************************************************
  * Register File
  **************************************************************************************************/
+
 logic rd_ena;
 logic [31:0] rd_data;
 wire [31:0] rs1_data, rs2_data;
@@ -159,8 +154,9 @@ always_comb begin : register_write_control
   endcase
 end
 
+
 /***************************************************************************************************
- * Decoder
+ * Instruction Decoder
  **************************************************************************************************/
 
 op_type_t op_type;
@@ -179,7 +175,7 @@ wire [4:0] uimm;
 
 instruction_decoder INSTRUCTION_DECODER(
   .ena(state == S_DECODE),
-  .clk(clk), .rst(rst), .IR(IR),
+  .clk(clk), .rst(rst), .instr(IR),
   .op_type(op_type), .rd(rd), .rs1(rs1), .rs2(rs2),
   .imm(imm), .uimm(uimm), .upimm(upimm),
   .funct3_ritype(funct3_ritype), .funct3_btype(funct3_btype),
@@ -187,10 +183,11 @@ instruction_decoder INSTRUCTION_DECODER(
   .funct3_debug(funct3_debug), .funct7(funct7)
 );
 
+
 /***************************************************************************************************
- * ALU and related controls
- * Feel free to replace with your ALU from the homework
+ * ALU
  **************************************************************************************************/
+
 logic [31:0] alu_src_a, alu_src_b;
 alu_control_t alu_control;
 wire [31:0] alu_result;
@@ -201,15 +198,15 @@ alu_behavioural ALU (
   .overflow(alu_overflow), .zero(alu_zero), .equal(alu_equal)
 );
 
+// R-Types and I-Types use the same logic for the ALU control, so we calculate that here
 alu_control_t ri_type_alu_control;
-
 always_comb begin : ri_type_alu_control_logic
   if (rst) begin
     ri_type_alu_control = ALU_ADD;
   end else case (funct3_ritype)
     FUNCT3_ADD: begin
-      // For some reason, verilog complains about not having an explicit cast if you use a ternary here
-      // (but also won't accept an explicit cast)
+      // For some reason, verilog complains about not having an explicit cast if you use a ternary
+      // here (but also won't accept an explicit cast)
       if (op_type == OP_RTYPE & funct7[5]) ri_type_alu_control = ALU_SUB;
       else ri_type_alu_control = ALU_ADD;
     end
@@ -224,7 +221,7 @@ always_comb begin : ri_type_alu_control_logic
       if (funct7[5]) ri_type_alu_control = ALU_SRA;
       else ri_type_alu_control = ALU_SRL;
     end
-    // For some reason this always triggers at t = 0, so disabling
+    // For some reason this always triggers at t = 0, so we can't panic
     // default: `PANIC("Unknown funct3_ritype");
   endcase
 end
@@ -313,20 +310,49 @@ always_comb begin : alu_logic
   endcase
 end
 
+
 /***************************************************************************************************
  * CPU State
  **************************************************************************************************/
 
 enum logic [3:0] {
-  S_FETCH  = 0,
+  // Fetch next instruction (at PC) from memory, put it in IR, and increment PC.
+  // After this cycle, the address of the instruction in IR will be PC_old
+  // Followed by: S_DECODE
+  S_FETCH  = 0, 
+
+  // Decode the fetched instruction (in IR).
+  // Followed by: S_EXECUTE (nominal), S_HALT (if instruction was a halt)
   S_DECODE = 1,
+
+  // First (and possibly only) execution step
+  // For branches, this is when we figure out if we will branch
+  // For loads/stores, this is when we calculate the target address
   // NOTE: all instruction types must start on S_EXECUTE, since at the time we're picking the next
-  // state S_DECODE hasn't finished yet. This should probably be fixed, but isn't a big blocker.
-  S_EXECUTE = 2,
+  // state S_DECODE hasn't finished yet. This should probably be fixed, but isn't a big issue
+  // Followed by: S_FETCH (default), S_BRANCH_JUMP (if successful branch), S_LOAD/S_STORE (for loads/stores)
+  S_EXECUTE = 2, 
+
+  // When branching, calculate branch target address and update PC
+  // Followed by: S_FETCH
   S_BRANCH_JUMP = 3,
+
+  // When loading, actually perform the memory access
+  // Followed by: S_FETCH
   S_LOAD = 4,
+
+  // When storing, actually perform the memory access
+  // Followed by: S_FETCH
+  // TODO: This could possibly be combined with S_LOAD, but it doesn't make much of a difference
   S_STORE = 5,
+
+  // We transition to S_HALT when we recieve a halt instruction, which is usually when we reach the
+  // end of the program. Disables all further computation. System must be reset to continue.
+  // Followed by: S_HALT (we never leave)
   S_HALT = 14,
+
+  // Indicates that the system has encountered a fatal error. We never leave this state.
+  // Overlaps significantly with the `PANIC macro, and the two should probably be combined.
   S_ERROR = 15
 } state;
 
@@ -365,12 +391,13 @@ always_ff @(posedge clk) begin
   endcase
 end
 
+
 /***************************************************************************************************
  * Branching & Comparisons
  **************************************************************************************************/
 
+// Calculate if we should branch based on ALU output, depending on branch type
 logic should_branch;
-
 always_comb begin : branch_logic
   if (rst) begin
     should_branch = 0;
@@ -389,12 +416,14 @@ always_comb begin : branch_logic
   end
 end
 
+
 /***************************************************************************************************
  * Store & Load
  **************************************************************************************************/
 
+// Load/Store target address, non-architectural register used to store ALU result between S_EXECUTE
+// and S_LOAD/S_STORE.
 logic [31:0] load_store_address;
-
 always_ff @(posedge clk) begin : load_store_address_logic
   if (rst) begin
     load_store_address <= 0;
@@ -408,14 +437,3 @@ always_ff @(posedge clk) begin : load_store_address_logic
 end
 
 endmodule
-
-//  an example of how to make named inputs for a mux:
-/*
-    enum logic {MEM_SRC_PC, MEM_SRC_RESULT} mem_src;
-    always_comb begin : memory_read_address_mux
-      case(mem_src)
-        MEM_SRC_RESULT : mem_rd_addr = alu_result;
-        MEM_SRC_PC : mem_rd_addr = PC;
-        default: mem_rd_addr = 0;
-    end
-*/

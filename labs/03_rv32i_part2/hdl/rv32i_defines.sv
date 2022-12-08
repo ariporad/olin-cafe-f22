@@ -71,5 +71,17 @@ function string op_name(logic [6:0] op);
   endcase
 endfunction
 
+// Helper: Panic function
+// Ends simulation, does nothing in sythesis
+// NOTE: This doesn't really belong in this file, but it wasn't worth making a whole different one
+
+`ifndef PANIC
+  `ifdef SIMULATION
+    `define PANIC $error
+  `else
+    `define PANIC
+  `endif // SIMULATION
+`endif // PANIC
+
 
 `endif // RV32I_DEFINES
