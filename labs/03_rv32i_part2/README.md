@@ -1,6 +1,6 @@
 # Outstanding Questions
 
-- Struggling to understand what should be combinational/what should be sequential
+_See here for documentation on [the CPU core](docs/CPU.md) and [assembler/linker](docs/ASSEMBLER.md)._
 
 # Multicycle RISC-V CPU
 This lab is all about designing a working rv32i (integer subset of the RISC-V spec) system. The overall system (in `rv32i_system.sv`) consists of a computation core (datapath, alu, register file, etc.) and a Memory Management Unit (MMU). The MMU will be critical when we start connecting our CPU to external peripherals, but for now you can treat it as a RAM with one read/write port.

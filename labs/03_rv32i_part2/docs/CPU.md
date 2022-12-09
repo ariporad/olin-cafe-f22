@@ -38,20 +38,22 @@ This CPU supports the entire `rv32i` instruction set, _except_ for `lh[u]`, `lb[
 
 ## Input and Output
 
-In simulation, upon halting, the CPU will print the value of the `a0` register as a return value. For a C program compiled/assembled with the default options, this will be the return value of `main`.
+In simulation, upon halting, the CPU will print the value of the `a0` register as a return value. See [the assembler documentation](ASSEMBLER.md) for how to use this with C.
 
-Additionally, if an `ARGV` option is provided to `make` for any `[waves|test]_rv32i[_c]_<name>` target, `a0` will be initialized with that value as an argument. If no argument is provided, it will default to zero. For example:
+Additionally, if an `ARGV` option is provided to `make` for any `[waves|test]_rv32i[_c]_<name>` target, `a0` will be initialized with that value as an argument. If no argument is provided, it will default to zero.
 
-```c
-// csrc/double_an_int.c
-int main(int argv) {
-	// Return twice argv
-	return argv + argv;
-}
+```assembly
+# plus_one.s
+
+addi a0, a0, 1
 ```
 
 ```bash
-$ make test_rv32i_c_double_an_int ARGV=4
+$ make test_rv32i_plus_one ARGV=4
 ... lots of output ...
-Halting! Program Returned:         8
+Halting! Program Returned:         5
 ```
+
+## Testing
+
+TODO
