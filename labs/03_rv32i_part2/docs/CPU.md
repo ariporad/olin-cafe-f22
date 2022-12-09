@@ -6,7 +6,7 @@
 
 The CPU's main state machine lives in `rv32i_multicycle_core.sv`. Each state is active for exactly one clock cycle, then transitions to another state (it is legal for a state to transition back to itself in some limited cases, such as `S_HALT` and `S_ERROR`). The states are as follows:
 
-![CPU finite state machine diagram](cpu_fsm.jpg)
+![CPU finite state machine diagram](imgs/cpu_fsm.jpg)
 
 |     **Name**    |                            **Description**                            |                                       **Register File**                                      |       **Memory Access**      |                **ALU**               |                         **Other**                         |                                                                **Notes**                                                                |
 |:---------------:|:---------------------------------------------------------------------:|:--------------------------------------------------------------------------------------------:|:----------------------------:|:------------------------------------:|:---------------------------------------------------------:|:---------------------------------------------------------------------------------------------------------------------------------------:|
@@ -33,7 +33,7 @@ This CPU supports the entire `rv32i` instruction set, _except_ for `lh[u]`, `lb[
 
 |      op     | funct3 | funct7 | Type | Instruction          | Description                    | Operation              | Notes                                |
 |:-----------:|:------:|--------|------|----------------------|--------------------------------|------------------------|--------------------------------------|
-| 0000000 (0) |   000  | -      | N/A  | `d.hlt`              | Stop CPU execution immediately | `HALT`                 | Instruction is all `0`s              |
+| 0000000 (0) |   000  | -      | N/A  | `halt`              | Stop CPU execution immediately | `HALT`                 | Instruction is all `0`s              |
 | 0000000 (0) |   100  | -      | I    | `d.aeq rd, rs1, imm` | Assert equal                   | `if (rs1 != imm) HALT` | `rd` is ignored, not yet implemented |
 
 ## Input and Output
