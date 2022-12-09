@@ -12,13 +12,6 @@ import sys
 
 import rv32i
 
-try:
-    from bitstring import BitArray
-except:
-    raise Exception(
-        "Missing a library, try `sudo apt install python3-bitstring`"
-    )
-
 
 class AssemblyProgram:
     def __init__(self, start_address=0, labels=None):
@@ -127,8 +120,7 @@ class AssemblyProgram:
                 address += 4
         if not disable_sourcemaps:
             # FIXME: This is *highly* inefficient
-            with open("assembly_sourcemap.txt", 'w') as f:
-                print(self.labels.items())
+            with open("tests/gtkwave_filters/assembly_sourcemap.txt", 'w') as f:
                 for address, line_no in source_map:
                     try:
                         nearest_label = sorted(
