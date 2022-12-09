@@ -42,13 +42,13 @@ In simulation, upon halting, the CPU will print the value of the `a0` register a
 
 Additionally, if an `ARGV` option is provided to `make` for any `[waves|test]_rv32i[_c]_<name>` target, `a0` will be initialized with that value as an argument. If no argument is provided, it will default to zero.
 
-```assembly
+```
 # plus_one.s
 
 addi a0, a0, 1
 ```
 
-```bash
+```
 $ make test_rv32i_plus_one ARGV=4
 ... lots of output ...
 Halting! Program Returned:         5

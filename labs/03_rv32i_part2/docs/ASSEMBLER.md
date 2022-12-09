@@ -20,7 +20,8 @@ For my final project, I set out to be able to close the loop of compiling a C pr
 Let's say we want to calculate the sum of all numbers from 1 to n (inclusive) for some n. Here's that in C:
 
 ```c
-int sum_1_to_n(int n) {
+int sum_1_to_n(int n)
+{
 	if (n <= 0) return 0;
 	return n + sum_1_to_n(n);
 }
@@ -47,7 +48,7 @@ Note that `main` takes an integer and returns one. These are both optional, but 
 
 Now we can compile and run our program:
 
-```bash
+```
 $ make test_rv32i_c_sum_1_to_n ARGV=5
 ... lots of output ...
 Halting! Program Returned:         15
@@ -55,7 +56,7 @@ Halting! Program Returned:         15
 
 Hooray! And we can re-run the same code with a different input too:
 
-```bash
+```
 $ make test_rv32i_c_sum_1_to_n ARGV=6
 ... lots of output ...
 Halting! Program Returned:         21
@@ -75,7 +76,7 @@ What did `make` just do? A bunch of things:
 
 Want to see all the glorious detail of the CPU running our program in GTKWave? Just change `test_` to `waves_` in the `make` command:
 
-```bash
+```
 $ make waves_rv32i_c_sum_1_to_n ARGV=5
 ```
 
@@ -93,7 +94,7 @@ The assembly output from GCC expects to be run inside an operating system, so if
 
 The "Preamble" is some assembly that is prepended to GCC's assembly that solves these problems. Since it's prepended, it ends up at the beginning of memory and so is executed first. Here's what it looks like (as of this writing--the real version is in [`asm/_preamble.s`](../asm/_preamble.s); with additional comments):
 
-```asm
+```
 PREAMBLE:
 	# This will always be the first instruction, so it's where execution will begin
 	 
@@ -118,10 +119,10 @@ PREAMBLE:
 
 	# Now we can call main
 	# By using a proper call (pseudo-)instruction, ra will be set so main can return like normal
-    call main
+	call main
 
 	# Once main returns, we'll come back here and halt the CPU
-    halt
+	halt
 ```
 
 #### Source Maps
