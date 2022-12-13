@@ -4,16 +4,62 @@
 # and the official [spec](https://github.com/riscv/riscv-isa-manual/releases/download/Ratified-IMAFDQC/riscv-spec-20191213.pdf)
 
 
+from __future__ import annotations
+from typing import *
+
 import argparse
 import os
 import os.path as path
 import re
 import sys
+from dataclasses import dataclass, replace, field
 
 import rv32i
 
+try:
+    from bitstring import BitArray
+except:
+    raise Exception(
+        "Missing a library, try `sudo apt install python3-bitstring`"
+    )
+
+
+@dataclass
+class ParsedLine:
+    original: str
+    line_number: int
+    instruction: str
+    args: List[str] = field(default_factory=list)
+    label: Optional[str] = field(default=None)
+
+    @property
+    def is_directive(self) -> bool:
+        """ Is this line an assembler directive? """
+        return self.instruction.startswith('.')
+
+    @property
+    def is_pseudo(self) -> bool:
+        """ Is this line a pesudo-instruction? """
+        return self.instruction in rv32i.PSEUDO_INSTRUCTIONS
+
+    def __str__(self) -> str:
+        output = f"{self.line_number:03} "
+        if self.label:
+            output += f"{self.label}: "
+        output += f"{self.instruction} "
+        output += ', '.join(self.args)
+
+        return f"`{output}`"
+
+
+COMMENTS_REGEX = r"\s*#.*"
+LABEL_REGEX = r"^([\w\(\)_\.]+):\s*(.*)"
+INSTRUCTION_REGEX = r"^([\w\.]+)\s*(.*)"
+
 
 class AssemblyProgram:
+    parsed_lines: List[ParsedLine]
+
     def __init__(self, start_address=0, labels=None):
         self.address = start_address
         self.line_number = 0
@@ -23,101 +69,118 @@ class AssemblyProgram:
                 self.labels[k] = labels[k]
         self.parsed_lines = []
 
-    def parse_line(self, line):
-        self.line_number += 1
-        parsed = {}
-        line = line.strip()
-        parsed["original"] = line
-        line = re.sub("\s*#.*", "", line)  # Remove comments.
-        match = re.search("^([\w\(\)_\.]+):", line)
-        if match:
-            self.labels[match.group(1)] = self.address
-            line = re.sub("^([\w\(\)_\.]+):\s*", "", line)
-            parsed["label"] = match.group(1)
-        match = re.search("^([\w\.]+)\s*(.*)", line)
-        if not match:
-            return -1
-        parsed["line_number"] = self.line_number
-        parsed["instruction"] = match.group(1)
-        parsed["args"] = [
+    def parse_args(self, args_str) -> List[str]:
+        return [
             x.strip()
-            for x in match.group(2).split(",")
+            for x in args_str.split(",")
             if x.strip() != ''
         ]
 
-        if parsed['instruction'].startswith('.'):
+    def parse_line(self, line):
+        self.line_number += 1
+        line = line.strip()
+        original_line = line
+        label = None
+
+        # Remove Comments
+        line = re.sub(COMMENTS_REGEX, "", line)
+
+        # Check for Label
+        label_match = re.search(LABEL_REGEX, line)
+        if label_match:
+            label, line = label_match.groups()
+            self.labels[label] = self.address
+
+        # Parse Instruction
+        instruction_match = re.search(INSTRUCTION_REGEX, line)
+        if not instruction_match:
+            return -1
+        instruction, args_str = instruction_match.groups()
+
+        parsed = ParsedLine(
+            original=original_line,
+            label=label,
+            line_number=self.line_number,
+            instruction=instruction,
+            args=self.parse_args(args_str)
+        )
+
+        if parsed.is_directive:
             print(
-                f"Detected assembler directive: {parsed['instruction']}, ignoring...", parsed)
+                f"Detected assembler directive: {parsed.instruction}, ignoring...", parsed)
             return 0
 
+        new_parsed_lines = [parsed]
+
         # Handle psuedo-instructions.
-        if parsed['instruction'] in rv32i.PSEUDO_INSTRUCTIONS:
+        if parsed.is_pseudo:
             pseudo_result = \
-                rv32i.PSEUDO_INSTRUCTIONS[parsed['instruction']](
-                    *parsed["args"]
-                )
+                rv32i.PSEUDO_INSTRUCTIONS[parsed.instruction](*parsed.args)
 
             # NOTE: pseudo_result can either be a tuple in the form ('inst', [arg1, arg2]) or a list
             # of tuples like that. We need to handle both cases
 
             # if just one returned instruction
             if not isinstance(pseudo_result[0], tuple):
-                parsed['instruction'], parsed['args'] = pseudo_result
+                parsed.instruction, parsed.args = pseudo_result
             else:  # otherwise, handle multiple
-                for i, (instruction, args) in enumerate(pseudo_result, start=1):
-                    pseudo_parsed = parsed.copy()
-                    # Each part of a pseudo-instruction is +0.1 to the line number
-                    pseudo_parsed['line_number'] += i / 10
-                    pseudo_parsed['instruction'] = instruction
-                    pseudo_parsed['args'] = args
-                    self.address += 4
-                    self.parsed_lines.append(pseudo_parsed)
-                return 0  # have to return so we don't append parsed
+                new_parsed_lines = [
+                    replace(parsed, instruction=instruction, args=args)
+                    for instruction, args in pseudo_result
+                ]
 
-        self.address += 4
-        self.parsed_lines.append(parsed)
+        for new_parsed_line in new_parsed_lines:
+            self.address += 4
+            self.parsed_lines.append(new_parsed_line)
+
         return 0
 
     def write_mem(self, fn, hex_notbin=True, disable_annotations=False, disable_sourcemaps=False):
-        output = []
-        address = 0
-        for line in self.parsed_lines:
+        output: List[Tuple[BitArray, ParsedLine]] = []
+        address: int = 0
+
+        # Convert all parsed instructions to binary
+        for parsed in self.parsed_lines:
             try:
                 bits = rv32i.line_to_bits(
-                    line, labels=self.labels, address=address
+                    parsed, labels=self.labels, address=address
                 )
             except rv32i.LineException as e:
                 print(
-                    f"Error on line {line['line_number']} ({line['instruction']})"
+                    f"Error on line {parsed.line_number} ({parsed.instruction})"
                 )
                 print(f"  {e}")
-                print(f"  original line: {line['original']}")
+                print(f"  original line: {parsed.original}")
                 return -1
             except Exception as e:
                 print(f"Unhandled error, possible bug in assembler!!!")
                 print(
-                    f"Error on line {line['line_number']} ({line['instruction']})"
+                    f"Error on line {parsed.line_number} ({parsed.instruction})"
                 )
                 print(f"  {e}")
-                print(f"  original line: {line['original']}")
+                print(f"  original line: {parsed.original}")
                 raise e
             address += 4
-            output.append((bits, line))
+            output.append((bits, parsed))
+
+        # Write to disk
         # Only write the file if the above completes without errors
         source_map = []
         with open(fn, "w") as f:
             address = 0
-            for bits, line in output:
-                annotation = f" // PC={hex(address)} line={line['line_number']}: {line['original']}"
+            for bits, parsed in output:
+                annotation = f" // PC={hex(address)} line={parsed.line_number}: {parsed.original}"
                 if disable_annotations:
                     annotation = ""
                 if not disable_sourcemaps:
-                    source_map.append((address, line['line_number']))
+                    source_map.append((address, parsed.line_number))
                 if hex_notbin:
                     f.write(f"{bits.hex}{annotation}\n")
                 else:
                     f.write(bits.bin + "\n")
                 address += 4
+
+        # Source maps
         if not disable_sourcemaps:
             # FIXME: This is *highly* inefficient
             with open("tests/gtkwave_filters/assembly_sourcemap.txt", 'w') as f:
@@ -190,14 +253,17 @@ def main():
             for line in f:
                 ap.parse_line(line)
 
+    # Halt execution at the end of the file
     ap.parsed_lines.append(
-        {'line_number': 'EOF', 'instruction': 'halt', 'args': [], 'original': ''}
+        ParsedLine(original='', line_number=-1, instruction='halt', args=[])
     )
+
     if args.verbose:
         print(f"Parsed {len(ap.parsed_lines)} instructions. Label table:")
         print(
             "  " + ",\n  ".join([f"{k} -> {ap.labels[k]}" for k in ap.labels])
         )
+
     if args.output:
         exit_code = ap.write_mem(
             args.output,
@@ -206,6 +272,7 @@ def main():
             disable_sourcemaps=args.disable_sourcemaps
         )
         sys.exit(exit_code)
+
     sys.exit(0)
 
 

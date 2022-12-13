@@ -5,6 +5,7 @@ except:
         "Missing a library, try `sudo apt install python3-bitstring`"
     )
 import re
+from dataclasses import replace
 
 pattern_immediate_offset_register = "(-?\d+)\((\w+)\)"
 
@@ -128,8 +129,6 @@ utypes = ["lui", "auipc"]
 
 
 def pseudo_instruction_li(rd, expression):
-    # TODO: Support 32-bit li
-    print("WARNING: 32-bit li is not supported")
     imm = parse_int_immediate(expression)
     try:
         check_imm(imm, 12)
@@ -255,8 +254,8 @@ for i in ["and", "andi", "bgeu"]:
 
 
 def line_to_bits(line, labels={}, address=0):
-    instruction = line["instruction"]
-    args = line["args"]
+    instruction = line.instruction
+    args = line.args
     bits = None
     if instruction in rtypes:
         if len(args) != 3:
@@ -267,9 +266,9 @@ def line_to_bits(line, labels={}, address=0):
         try:
             rd, rs1, rs2 = [register_to_bits(a) for a in args]
         except KeyError:
-            line = line.copy()
-            line['instruction'] += 'i'
-            return line_to_bits(line, labels, address)
+            # Sometimes, GCC likes to forget the I in immediate instructions, so if we couldn't
+            # parse the registers than try again with an i
+            return line_to_bits(replace(line, instruction=line.instruction + 'i'), labels, address)
 
         funct7 = BitArray(length=7)
         if instruction in ["sub", "sra"]:

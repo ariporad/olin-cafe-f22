@@ -9,5 +9,5 @@ int fibonacci(int n)
 
 int main(int n)
 {
-    return fibonacci(n) + 1;
+    return fibonacci(n);
 }

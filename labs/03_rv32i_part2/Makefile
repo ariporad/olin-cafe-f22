@@ -41,7 +41,7 @@ asm/compiled/%.memh : asm/compiled/%.s assembler.py rv32i.py
 ### Compile C -> asm ###
 
 asm/compiled/%.s : csrc/%.c riscv_gcc_docker.sh
-	./riscv_gcc_docker.sh -march=rv32i -mabi=ilp32 -S -o ./asm/compiled/$*.s ./csrc/$*.c
+	./riscv_gcc_docker.sh -march=rv32i -mabi=ilp32 -static-libgcc -S -o ./asm/compiled/$*.s ./csrc/$*.c
 
 
 ####################################################################################################
