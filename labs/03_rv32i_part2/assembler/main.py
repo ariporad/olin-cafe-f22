@@ -15,13 +15,7 @@ import sys
 from dataclasses import dataclass, replace, field
 
 import rv32i
-
-try:
-    from bitstring import BitArray
-except:
-    raise Exception(
-        "Missing a library, try `sudo apt install python3-bitstring`"
-    )
+from helpers import BitArray
 
 
 @dataclass

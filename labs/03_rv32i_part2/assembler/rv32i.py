@@ -1,62 +1,20 @@
-try:
-    from bitstring import BitArray
-except:
-    raise Exception(
-        "Missing a library, try `sudo apt install python3-bitstring`"
-    )
 import re
 from dataclasses import replace
 
-pattern_immediate_offset_register = "(-?\d+)\((\w+)\)"
+from helpers import BitArray, LineException
+from constants import *
 
-register_names = [
-    ["x0", "zero"],  # zero constant
-    ["x1", "ra"],  # return address
-    ["x2", "sp"],  # stack pointer
-    ["x3", "gp"],  # global pointer
-    ["x4", "tp"],  # thread pointer
-    ["x5", "t0"],  # temporary value
-    ["x6", "t1"],  # temporary value
-    ["x7", "t2"],  # temporary value
-    ["x8", "s0", "fp"],  # saved/frame pointer
-    ["x9", "s1"],  # saved register
-    ["x10", "a0"],  # function arguments/return values
-    ["x11", "a1"],  # function arguments/return values
-    ["x12", "a2"],  # function arguments
-    ["x13", "a3"],
-    ["x14", "a4"],
-    ["x15", "a5"],
-    ["x16", "a6"],
-    ["x17", "a7"],
-    ["x18", "s2"],  # saved registers - must be preserved by callee functions.
-    ["x19", "s3"],
-    ["x20", "s4"],
-    ["x21", "s5"],
-    ["x22", "s6"],
-    ["x23", "s7"],
-    ["x24", "s8"],
-    ["x25", "s9"],
-    ["x26", "s10"],
-    ["x27", "s11"],
-    ["x28", "t3"],  # more temporaries
-    ["x29", "t4"],
-    ["x30", "t5"],
-    ["x31", "t6"],
-]
-register_to_integer = {}
-for i, rs in enumerate(register_names):
-    for r in rs:
-        register_to_integer[r] = i
+pattern_immediate_offset_register = "(-?\d+)\((\w+)\)"
 
 
 def register_to_bits(register):
-    return BitArray(uint=register_to_integer[register], length=5)
+    return BitArray(uint=REGISTER_TO_INTEGER[register], length=5)
 
 
 def bits_to_register(bits):
     if bits.length != 5:
         raise ValueError(f"Register must be 5 bits, not {bits.length}.")
-    return register_names[bits.uint][0]
+    return REGISTER_NAMES[bits.uint][0]
 
 
 def parse_int_immediate(imm):  # TODO: use this consistently
@@ -82,50 +40,9 @@ def parse_int_immediate(imm):  # TODO: use this consistently
         return int(imm)
 
 
-class LineException(Exception):
-    pass
-
-
 def check_imm(imm, bits):
     if imm >= 2 ** (bits - 1) or imm < -(2 ** (bits - 1)):
         raise LineException(f"Immediate {imm} does not fit into {bits} bits.")
-
-
-rtypes = [
-    "add",
-    "sub",
-    "xor",
-    "or",
-    "and",
-    "sll",
-    "srl",
-    "sra",
-    "slt",
-    "sltu",
-]
-itypes = [
-    "addi",
-    "xori",
-    "ori",
-    "andi",
-    "slli",
-    "srli",
-    "srai",
-    "slti",
-    "sltiu",
-    "jalr",
-]
-ltypes = [
-    "lb",
-    "lh",
-    "lw",
-    "lbu",
-    "lhu",
-]
-stypes = ["sb", "sh", "sw"]
-btypes = ["beq", "bne", "blt", "bge", "bltu", "bgeu"]
-jtypes = ["jal"]
-utypes = ["lui", "auipc"]
 
 
 def pseudo_instruction_li(rd, expression):
@@ -214,50 +131,12 @@ PSEUDO_INSTRUCTIONS = {
     # "sext.w": lambda rd, rs1: ("addiw", [rd, rs, 0]),
 }
 
-op_codes = {}
-for i in rtypes:
-    op_codes[i] = BitArray("0b0110011")
-for i in itypes:
-    op_codes[i] = BitArray("0b0010011")
-for i in ltypes:
-    op_codes[i] = BitArray("0b0000011")
-for i in stypes:
-    op_codes[i] = BitArray("0b0100011")
-for i in btypes:
-    op_codes[i] = BitArray("0b1100011")
-op_codes["jal"] = BitArray("0b1101111")
-op_codes["jalr"] = BitArray("0b1100111")
-op_codes["lui"] = BitArray("0b0110111")
-op_codes["auipc"] = BitArray("0b0010111")
-# op_codes["ecall"] = BitArray("0b1110011")
-# op_codes["ebreak"] = BitArray("0b1110011")
-
-bits_to_op_code = {v.bin: k for k, v in op_codes.items()}
-
-funct3_codes = {}
-for i in ["add", "sub", "addi", "lb", "sb", "beq", "jalr"]:
-    funct3_codes[i] = BitArray("0b000")
-for i in ["sll", "slli", "lh", "sh", "bne"]:
-    funct3_codes[i] = BitArray("0b001")
-for i in ["slt", "slti", "lw", "sw"]:
-    funct3_codes[i] = BitArray("0b010")
-for i in ["sltu", "sltiu"]:
-    funct3_codes[i] = BitArray("0b011")
-for i in ["xor", "xori", "lbu", "blt"]:
-    funct3_codes[i] = BitArray("0b100")
-for i in ["srl", "sra", "srli", "srai", "lhu", "bge"]:
-    funct3_codes[i] = BitArray("0b101")
-for i in ["or", "ori", "bltu"]:
-    funct3_codes[i] = BitArray("0b110")
-for i in ["and", "andi", "bgeu"]:
-    funct3_codes[i] = BitArray("0b111")
-
 
 def line_to_bits(line, labels={}, address=0):
     instruction = line.instruction
     args = line.args
     bits = None
-    if instruction in rtypes:
+    if instruction in RTYPES:
         if len(args) != 3:
             raise LineException(
                 "R-type instructions require 3 arguments.",
@@ -277,11 +156,11 @@ def line_to_bits(line, labels={}, address=0):
             funct7
             + rs2
             + rs1
-            + funct3_codes[instruction]
+            + FUNCT3_CODES[instruction]
             + rd
-            + op_codes[instruction]
+            + OP_CODES[instruction]
         )
-    if instruction in itypes:
+    if instruction in ITYPES:
         if len(args) != 3:
             raise LineException(
                 "I-type instructions require 3 arguments.",
@@ -295,12 +174,12 @@ def line_to_bits(line, labels={}, address=0):
         bits = (
             imm12
             + rs1
-            + funct3_codes[instruction]
+            + FUNCT3_CODES[instruction]
             + rd
-            + op_codes[instruction]
+            + OP_CODES[instruction]
         )
     # Not an official "type", but parsed differently
-    if instruction in ltypes:
+    if instruction in LTYPES:
         # ex: lw rd, imm(rs1)
         rd, offset_rs = args
         match = re.match(pattern_immediate_offset_register, offset_rs)
@@ -318,9 +197,9 @@ def line_to_bits(line, labels={}, address=0):
         rs = register_to_bits(match.group(2))
         rd = register_to_bits(rd)
         bits = (
-            imm12 + rs + funct3_codes[instruction] + rd + op_codes[instruction]
+            imm12 + rs + FUNCT3_CODES[instruction] + rd + OP_CODES[instruction]
         )
-    if instruction in stypes:
+    if instruction in STYPES:
         rs2, offset_rs = args
         match = re.match(pattern_immediate_offset_register, offset_rs)
         if not match:
@@ -337,11 +216,11 @@ def line_to_bits(line, labels={}, address=0):
             imm12[0:7]
             + rs2
             + rs1
-            + funct3_codes[instruction]
+            + FUNCT3_CODES[instruction]
             + imm12[7:]
-            + op_codes[instruction]
+            + OP_CODES[instruction]
         )
-    if instruction in btypes:
+    if instruction in BTYPES:
         rs1, rs2, label = args
         rs1 = register_to_bits(rs1)
         rs2 = register_to_bits(rs2)
@@ -372,10 +251,10 @@ def line_to_bits(line, labels={}, address=0):
             + imm12[2:8]
             + rs2
             + rs1
-            + funct3_codes[instruction]
+            + FUNCT3_CODES[instruction]
             + imm12[8:12]
             + imm12[1:2]
-            + op_codes[instruction]
+            + OP_CODES[instruction]
         )
     if instruction == "jal":
         rd, label = args
@@ -394,13 +273,13 @@ def line_to_bits(line, labels={}, address=0):
         print(
             f"Found a jal: offset = {offset}, imm={imm.bin}, imm20={imm20.bin} | {label}"
         )
-        bits = imm20 + rd + op_codes[instruction]
-    if instruction in utypes:
+        bits = imm20 + rd + OP_CODES[instruction]
+    if instruction in UTYPES:
         rd, upimm = args
         rd = register_to_bits(rd)
         check_imm(upimm, 20)
         upimm = BitArray(int=int(upimm), length=20)
-        bits = upimm + rd + op_codes[instruction]
+        bits = upimm + rd + OP_CODES[instruction]
     if instruction == 'halt':
         bits = BitArray(length=32)  # zeroed by default
         print("HALT:", not not bits)
@@ -413,41 +292,6 @@ def line_to_bits(line, labels={}, address=0):
             f"Internal: Hard coded values didn't line up to 32 bits (was {bits.length} instead)",
         )
     return bits
-
-
-rtype_funct3_mapping = {
-    "001": "sll",
-    "010": "slt",
-    "011": "sltu",
-    "100": "xor",
-    "110": "or",
-    "111": "and",
-}
-itype_funct3_mapping = {
-    "000": "addi",
-    "001": "slli",
-    "010": "slti",
-    "011": "sltiu",
-    "100": "xori",
-    "110": "ori",
-    "111": "andi",
-}
-ltype_funct3_mapping = {
-    "000": "lb",
-    "001": "lh",
-    "010": "lw",
-    "100": "lbu",
-    "101": "lhu",
-}
-stype_funct3_mapping = {"000": "sb", "001": "sh", "010": "sw"}
-btype_funct3_mapping = {
-    "000": "beq",
-    "001": "bne",
-    "100": "blt",
-    "101": "bge",
-    "110": "bltu",
-    "111": "bgeu",
-}
 
 
 def bits_to_line(bits, labels=None):
@@ -482,7 +326,7 @@ def bits_to_line(bits, labels=None):
                 )
         else:
             try:
-                op = rtype_funct3_mapping[funct3.bin]
+                op = RTYPE_FUNCT3_MAPPING[funct3.bin]
             except KeyError as e:
                 raise ValueError(f"Invalid r-type funct3: {funct3.bin}")
         return f"{op} {rd}, {rs1}, {rs2}"
@@ -498,7 +342,7 @@ def bits_to_line(bits, labels=None):
                 )
         else:
             try:
-                op = itype_funct3_mapping[funct3.bin]
+                op = ITYPE_FUNCT3_MAPPING[funct3.bin]
             except KeyError as e:
                 raise ValueError(f"Invalid i-type funct3: {funct3.bin}")
         immediate = imm12.int
@@ -507,21 +351,21 @@ def bits_to_line(bits, labels=None):
         return f"{op} {rd}, {rs1}, {immediate}"
     if op_code.bin == "0000011":  # l-type
         try:
-            op = ltype_funct3_mapping[funct3.bin]
+            op = LTYPE_FUNCT3_MAPPING[funct3.bin]
         except KeyError as e:
             raise ValueError(f"Invalid load i-type funct3: {funct3.bin}")
         immediate = imm12.int
         return f"{op} {rd}, {immediate}({rs1})"
     if op_code.bin == "0100011":  # s-type
         try:
-            op = stype_funct3_mapping[funct3.bin]
+            op = STYPE_FUNCT3_MAPPING[funct3.bin]
         except KeyError:
             raise ValueError(f"Invalid s-type funct3: {funct3.bin}")
         imm12 = bits[31 - 31: 31 - 25 + 1] + bits[31 - 11: 31 - 11 + 5]
         return f"{op} {rs2}, {imm12.int}({rs1})"
     if op_code.bin == "1100011":  # b-type
         try:
-            op = btype_funct3_mapping[funct3.bin]
+            op = BTYPE_FUNCT3_MAPPING[funct3.bin]
         except KeyError:
             raise ValueError(f"Invalid b-type funct3: {funct3.bin}")
         imm12 = BitArray(length=12)
@@ -539,18 +383,18 @@ def bits_to_line(bits, labels=None):
     imm20 = BitArray(length=21)
     imm20 = bits[31] + bits[19:12] + bits[20] + bits[30:25]
     imm20 = imm20 * 2
-    if op_code == op_codes["auipc"]:
+    if op_code == OP_CODES["auipc"]:
         return f"auipc {rd}, {imm20.int}"
-    if op_code == op_codes["lui"]:
+    if op_code == OP_CODES["lui"]:
         return f"lui {rd}, {imm20.int}"
-    if op_code == op_codes["jalr"]:
+    if op_code == OP_CODES["jalr"]:
         if funct3.bin != "000":
             raise ValueError(
                 f"Incorrectly formatted jalr: funct3 should be 000, not {funct3.bin}"
             )
         return f"jalr {rd}, {rs1}, {imm12.int}"
 
-    if op_code == op_codes["jal"]:
+    if op_code == OP_CODES["jal"]:
         # original imm=00000000000000100100,
         # packed      =00001000010000000000
         # bad          00001000010000000000
