@@ -19,9 +19,6 @@ The CPU's main state machine lives in `rv32i_multicycle_core.sv`. Each state is 
 |     `S_HALT`    | Stop execution immediately. No further activity occurs.               | -                                                                                            | -                            | -                                    | -                                                         | Never leaves this state. In simulation, immediately exits.                                                                              |
 |    `S_ERROR`    | Encountered a fatal error. No further activity occurs.                | -                                                                                            | -                            | -                                    | -                                                         | Never leaves this state. Somewhat duplicative/inconsistent with `PANIC` macro (see below).                                              |
 
-### Data Flow Diagram
-
-TODO
 
 ### `PANIC`
 
@@ -29,12 +26,11 @@ The `PANIC` macro is used throughout the CPU when an unrecoverable error has ocu
 
 ## Instructions
 
-This CPU supports the entire `rv32i` instruction set, _except_ for `lh[u]`, `lb[u]`, `sh`, and `sb`. It also supports the following non-standard instructions:
+This CPU supports the entire `rv32i` instruction set, _except_ for `lh[u]`, `lb[u]`, `sh`, and `sb`. It also supports the following non-standard instruction(s):
 
 |      op     | funct3 | funct7 | Type | Instruction          | Description                    | Operation              | Notes                                |
 |:-----------:|:------:|--------|------|----------------------|--------------------------------|------------------------|--------------------------------------|
 | 0000000 (0) |   000  | -      | N/A  | `halt`              | Stop CPU execution immediately | `HALT`                 | Instruction is all `0`s              |
-| 0000000 (0) |   100  | -      | I    | `d.aeq rd, rs1, imm` | Assert equal                   | `if (rs1 != imm) HALT` | `rd` is ignored, not yet implemented |
 
 ## Input and Output
 
@@ -53,7 +49,3 @@ $ make test_rv32i_plus_one ARGV=4
 ... lots of output ...
 Halting! Program Returned:         5
 ```
-
-## Testing
-
-TODO

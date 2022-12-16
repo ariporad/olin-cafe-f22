@@ -24,5 +24,5 @@ PREAMBLE:
 	# By using a proper call (pseudo-)instruction, ra will be set so main can return like normal
     call main
 
-	# Once main returns, we'll come back here and halt the CPU
+	# When main returns, we'll jump back here and halt the CPU
     halt
