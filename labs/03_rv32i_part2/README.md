@@ -1,8 +1,61 @@
-# Outstanding Questions
-
-_See here for documentation on [the CPU core](docs/CPU.md) and [assembler/linker](docs/ASSEMBLER.md)._
-
 # Multicycle RISC-V CPU
+
+**Team:** Ari Porad (Solo)
+
+_See here for more documentation on [the CPU core](docs/CPU.md) and [assembler/linker](docs/ASSEMBLER.md)._
+
+## Instruction Checklist
+Optional instructions are in italics.
+### Custom
+- [x] halt (`0x00000000`): CPU immediately stops execution, simulation exits
+### R-types
+- [x] add
+- [x] sub
+- [x] xor
+- [x] or
+- [x] and
+- [x] sll
+- [x] srl
+- [x] sra
+- [x] slt
+- [x] sltu
+### I-types
+- [x] addi
+- [x] xori
+- [x] ori
+- [x] andi
+- [x] slli
+- [x] srli
+- [x] srai
+- [x] slti
+- [x] sltiu
+### Memory-Types (Loads/Stores)
+- [x] lw
+- [x] sw
+- [ ] *lb*
+- [ ] *lh*
+- [ ] *lbu*
+- [ ] *lhu*
+- [ ] *sb*
+- [ ] *sh*
+### B-types (Branches)
+- [x] beq
+- [x] bne
+- [x] *blt*
+- [x] *bge*
+- [x] *bltu*
+- [x] *bgeu*
+### J-types (Jumps)
+- [x] jal
+- [x] jalr (technically an i-type)
+### U-types (Upper immediates)
+- [x] *lui*
+- [x] *auipc*
+
+Note, the above list doesn't include some common psuedo-instructions like `ret` and `j` and `not` since those can be expressed in terms of what we've already listed here. See `assembler.py` for more details.
+
+## Introduction
+
 This lab is all about designing a working rv32i (integer subset of the RISC-V spec) system. The overall system (in `rv32i_system.sv`) consists of a computation core (datapath, alu, register file, etc.) and a Memory Management Unit (MMU). The MMU will be critical when we start connecting our CPU to external peripherals, but for now you can treat it as a RAM with one read/write port.
 
 Your task is to implement `rv32i_multicycle_core.sv`. A computational core takes in our typical `clk` and `rst` signals, and can interface with memory via the `mem_addr`, `mem_wr_data`, `mem_wr_ena`, and `mem_rd_data` signals. By convention the core can only read xor write to memory in a given cycle - augmenting it to do reads and writes simultaneously is beyond the scope for this lab but could be useful for a final project around optimizing memory accesses. You should also check `rv32i_defines.sv` - it contains some useful constants from the ISA.
@@ -49,52 +102,3 @@ The MVP for this project is a core that works in simulation, but I recommend pus
 You can use `make analyze_rv32i_system` to generate a variety of reports showing timing and area results of your design - you should look through those and identify what your critical path is (and what your fastest clock speed is) as well as see what percentage of the FPGA resources you are using. 
 
 Your submission should include any extra tests you've run, as well as sketches/block diagrams showing the main multicycle FSM as well as the datapaths for a few R, I, memory, and branch instructions. To make grading easier, mark off the instructions you have implemented on the list below before submitting.
-
-## Instruction Checklist
-Optional instructions are in italics.
-### R-types
-- [x] add
-- [x] sub
-- [x] xor
-- [x] or
-- [x] and
-- [x] sll
-- [x] srl
-- [x] sra
-- [x] slt
-- [x] sltu
-### I-types
-- [x] addi
-- [x] xori
-- [x] ori
-- [x] andi
-- [x] slli
-- [x] srli
-- [x] srai
-- [x] slti
-- [x] sltiu
-### Memory-Types (Loads/Stores)
-- [x] lw
-- [x] sw
-- [ ] *lb*
-- [ ] *lh*
-- [ ] *lbu*
-- [ ] *lhu*
-- [ ] *sb*
-- [ ] *sh*
-
-### B-types (Branches)
-- [x] beq
-- [x] bne
-- [x] *blt*
-- [x] *bge*
-- [x] *bltu*
-- [x] *bgeu*
-### J-types (Jumps)
-- [x] jal
-- [x] jalr (technically an i-type)
-### U-types (Upper immediates)
-- [x] *lui*
-- [x] *auipc*
-
-Note, the above list doesn't include some common psuedo-instructions like `ret` and `j` and `not` since those can be expressed in terms of what we've already listed here. See `assembler.py` for more details.

@@ -4,6 +4,8 @@
 
 ### State Machine
 
+_Note: Avi said that it was alright to not include schematics since I'd already moved past that part of the process and it didn't make a lot of sense to backtrack and re-create them._
+
 The CPU's main state machine lives in `rv32i_multicycle_core.sv`. Each state is active for exactly one clock cycle, then transitions to another state (it is legal for a state to transition back to itself in some limited cases, such as `S_HALT` and `S_ERROR`). The states are as follows:
 
 ![CPU finite state machine diagram](imgs/cpu_fsm.jpg)
@@ -18,7 +20,6 @@ The CPU's main state machine lives in `rv32i_multicycle_core.sv`. Each state is 
 |    `S_STORE`    | For store instructions, store the data into memory                    | -                                                                                            | Store `rs2` @ target address | -                                    | -                                                         | Target address stored is calculated during `S_EXECUTE`, stored in non-architectural register ( `load_store_address` ).                  |
 |     `S_HALT`    | Stop execution immediately. No further activity occurs.               | -                                                                                            | -                            | -                                    | -                                                         | Never leaves this state. In simulation, immediately exits.                                                                              |
 |    `S_ERROR`    | Encountered a fatal error. No further activity occurs.                | -                                                                                            | -                            | -                                    | -                                                         | Never leaves this state. Somewhat duplicative/inconsistent with `PANIC` macro (see below).                                              |
-
 
 ### `PANIC`
 
