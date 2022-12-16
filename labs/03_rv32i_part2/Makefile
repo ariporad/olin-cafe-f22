@@ -125,7 +125,7 @@ clean:
 
 # Call this to generate your submission zip file.
 submission:
-	zip submission.zip Makefile asm/*.s hdl/*.sv README.md docs/* *.tcl *.xdc tests/*.sv *.pdf
+	zip submission.zip Makefile asm/*.s hdl/*.sv README.md docs/*.md docs/**/* *.tcl *.xdc tests/*.sv tests/gtkwave_filters/*.txt *.pdf assembler/*.py csrc/*.c 
 
 
 ####################################################################################################
