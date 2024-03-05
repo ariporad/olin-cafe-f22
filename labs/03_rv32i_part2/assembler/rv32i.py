@@ -14,7 +14,7 @@ def register_to_bits(register):
 def bits_to_register(bits):
     if bits.length != 5:
         raise ValueError(f"Register must be 5 bits, not {bits.length}.")
-    return REGISTER_NAMES[bits.uint][0]
+    return REGISTER_NAMES[bits.uint][-1]
 
 
 def parse_int_immediate(imm):  # TODO: use this consistently
@@ -30,11 +30,11 @@ def parse_int_immediate(imm):  # TODO: use this consistently
     assert isinstance(imm, str), f"Unknown type for imm: {type(imm)} ({imm})"
 
     imm = imm.strip().lower()
-    if imm.startswith('0x'):  # hex
+    if imm.startswith("0x"):  # hex
         return int(imm[2:], 16)
-    elif imm.startswith('0b'):  # binary
+    elif imm.startswith("0b"):  # binary
         return int(imm[2:], 2)
-    elif imm.startswith('0'):  # octal
+    elif imm.startswith("0"):  # octal
         return int(imm, 8)
     else:  # decimal
         return int(imm)
@@ -49,7 +49,7 @@ def pseudo_instruction_li(rd, expression):
     imm = parse_int_immediate(expression)
     try:
         check_imm(imm, 12)
-        return 'addi', [rd, 'zero', expression]
+        return "addi", [rd, "zero", expression]
     except LineException:  # need to do a full 32-bit li
         # NOTE: addi does sign extension, so we need to be clever here. If the MSB is high, it will
         # think imm12 is negative (resulting in a net change of -4096). Adding 1 to upimm will add
@@ -60,15 +60,12 @@ def pseudo_instruction_li(rd, expression):
         if imm12 >= 0x800:  # MSB is high
             imm12 = -1  # This will be 0xFFF
             upimm += 1
-        return [
-            ('lui', [rd, upimm]),
-            ('addi', [rd, rd, imm12])
-        ]
+        return [("lui", [rd, upimm]), ("addi", [rd, rd, imm12])]
 
 
 def pseudo_instruction_call(label):
     print("WARNING: call only works with nearby functions")
-    return 'jal', ['ra', label]
+    return "jal", ["ra", label]
 
 
 # Table from: https://michaeljclark.github.io/asm.html
@@ -120,12 +117,10 @@ PSEUDO_INSTRUCTIONS = {
     "ret": lambda: ("jalr", ["zero", "ra", 0]),
     # Call a function
     "call": pseudo_instruction_call,
-
     # Load immediate
     "li": pseudo_instruction_li,
     # Load address
-    "la": lambda rd, symbol: None  # TODO
-
+    "la": lambda rd, symbol: None,  # TODO
     # TODO: What is this?
     # Sign extend Word
     # "sext.w": lambda rd, rs1: ("addiw", [rd, rs, 0]),
@@ -147,18 +142,15 @@ def line_to_bits(line, labels={}, address=0):
         except KeyError:
             # Sometimes, GCC likes to forget the I in immediate instructions, so if we couldn't
             # parse the registers than try again with an i
-            return line_to_bits(replace(line, instruction=line.instruction + 'i'), labels, address)
+            return line_to_bits(
+                replace(line, instruction=line.instruction + "i"), labels, address
+            )
 
-        funct7 = BitArray(length=7)
+        funct7 = BitArray(0, length=7)
         if instruction in ["sub", "sra"]:
             funct7 = BitArray("0b0100000")
         bits = (
-            funct7
-            + rs2
-            + rs1
-            + FUNCT3_CODES[instruction]
-            + rd
-            + OP_CODES[instruction]
+            funct7 + rs2 + rs1 + FUNCT3_CODES[instruction] + rd + OP_CODES[instruction]
         )
     if instruction in ITYPES:
         if len(args) != 3:
@@ -171,22 +163,14 @@ def line_to_bits(line, labels={}, address=0):
         imm12 = int(imm12)
         check_imm(imm12, 12)
         imm12 = BitArray(int=imm12, length=12)
-        bits = (
-            imm12
-            + rs1
-            + FUNCT3_CODES[instruction]
-            + rd
-            + OP_CODES[instruction]
-        )
+        bits = imm12 + rs1 + FUNCT3_CODES[instruction] + rd + OP_CODES[instruction]
     # Not an official "type", but parsed differently
     if instruction in LTYPES:
         # ex: lw rd, imm(rs1)
         rd, offset_rs = args
         match = re.match(pattern_immediate_offset_register, offset_rs)
         if not match:
-            raise LineException(
-                "Load: immediate offset incorrectly formatted."
-            )
+            raise LineException("Load: immediate offset incorrectly formatted.")
         imm12 = int(match.group(1))
         check_imm(imm12, 12)
         imm12 = BitArray(int=int(match.group(1)), length=12)
@@ -196,9 +180,7 @@ def line_to_bits(line, labels={}, address=0):
             imm12[0:7] = "0b0100000"
         rs = register_to_bits(match.group(2))
         rd = register_to_bits(rd)
-        bits = (
-            imm12 + rs + FUNCT3_CODES[instruction] + rd + OP_CODES[instruction]
-        )
+        bits = imm12 + rs + FUNCT3_CODES[instruction] + rd + OP_CODES[instruction]
     if instruction in STYPES:
         rs2, offset_rs = args
         match = re.match(pattern_immediate_offset_register, offset_rs)
@@ -280,8 +262,8 @@ def line_to_bits(line, labels={}, address=0):
         check_imm(upimm, 20)
         upimm = BitArray(int=int(upimm), length=20)
         bits = upimm + rd + OP_CODES[instruction]
-    if instruction == 'halt':
-        bits = BitArray(length=32)  # zeroed by default
+    if instruction == "halt":
+        bits = BitArray(0, length=32)  # zeroed by default
         print("HALT:", not not bits)
     if bits is None:
         raise LineException(
@@ -298,10 +280,10 @@ def bits_to_line(bits, labels=None):
     if bits.length != 32:
         raise ValueError("instruction must be 32 bits")
     op_code = bits[25:]
-    rd = bits_to_register(bits[31 - 11: 31 - 7 + 1])
-    rs1 = bits_to_register(bits[31 - 19: 31 - 15 + 1])
-    rs2 = bits_to_register(bits[31 - 24: 31 - 20 + 1])
-    funct3 = bits[31 - 14: 31 - 12 + 1]
+    rd = bits_to_register(bits[31 - 11 : 31 - 7 + 1])
+    rs1 = bits_to_register(bits[31 - 19 : 31 - 15 + 1])
+    rs2 = bits_to_register(bits[31 - 24 : 31 - 20 + 1])
+    funct3 = bits[31 - 14 : 31 - 12 + 1]
     imm12 = bits[0:12]
     op = None
     funct7 = bits[0:7]
@@ -312,18 +294,14 @@ def bits_to_line(bits, labels=None):
             elif funct7.bin == "0100000":
                 op = "sub"
             else:
-                raise ValueError(
-                    f"Invalid r-type add/sub funct7: {funct7.bin}"
-                )
+                raise ValueError(f"Invalid r-type add/sub funct7: {funct7.bin}")
         elif funct3.bin == "101":
             if funct7.bin == "0000000":
                 op = "srl"
             elif funct7.bin == "0100000":
                 op = "sra"
             else:
-                raise ValueError(
-                    f"Invalid r-type srl/sra funct7: {funct7.bin}"
-                )
+                raise ValueError(f"Invalid r-type srl/sra funct7: {funct7.bin}")
         else:
             try:
                 op = RTYPE_FUNCT3_MAPPING[funct3.bin]
@@ -337,9 +315,7 @@ def bits_to_line(bits, labels=None):
             elif funct7.bin == "0100000":
                 op = "srai"
             else:
-                raise ValueError(
-                    f"Invalid i-type srl/sra funct7: {funct7.bin}"
-                )
+                raise ValueError(f"Invalid i-type srl/sra funct7: {funct7.bin}")
         else:
             try:
                 op = ITYPE_FUNCT3_MAPPING[funct3.bin]
@@ -361,7 +337,7 @@ def bits_to_line(bits, labels=None):
             op = STYPE_FUNCT3_MAPPING[funct3.bin]
         except KeyError:
             raise ValueError(f"Invalid s-type funct3: {funct3.bin}")
-        imm12 = bits[31 - 31: 31 - 25 + 1] + bits[31 - 11: 31 - 11 + 5]
+        imm12 = bits[31 - 31 : 31 - 25 + 1] + bits[31 - 11 : 31 - 11 + 5]
         return f"{op} {rs2}, {imm12.int}({rs1})"
     if op_code.bin == "1100011":  # b-type
         try:
@@ -370,9 +346,9 @@ def bits_to_line(bits, labels=None):
             raise ValueError(f"Invalid b-type funct3: {funct3.bin}")
         imm12 = BitArray(length=12)
         imm12[0] = bits[0]
-        imm12[12 - 10: 12 - 5 + 1] = bits[1:7]
-        imm12[12 - 4: 12 - 1 + 1] = bits[31 - 11: 31 - 7 + 1]
-        imm12[1] = bits[31 - 7: 31 - 7 + 1]
+        imm12[12 - 10 : 12 - 5 + 1] = bits[1:7]
+        imm12[12 - 4 : 12 - 1 + 1] = bits[31 - 11 : 31 - 7 + 1]
+        imm12[1] = bits[31 - 7 : 31 - 7 + 1]
         address = imm12
         if labels is None:
             return f"{op} {rs1}, {rs2}, {address.uint}"
@@ -381,8 +357,8 @@ def bits_to_line(bits, labels=None):
             labels[address] = f"LABEL_{len(labels)}"
         return f"{op} {rs1}, {rs2}, {labels[address]} # {labels[address]} <- {address}"
     imm20 = BitArray(length=21)
-    imm20 = bits[31] + bits[19:12] + bits[20] + bits[30:25]
-    imm20 = imm20 * 2
+    imm20 = bits[31:32] + bits[19:12] + bits[20:21] + bits[30:25]
+    imm20 = imm20 + BitArray(uint=1, length=1)
     if op_code == OP_CODES["auipc"]:
         return f"auipc {rd}, {imm20.int}"
     if op_code == OP_CODES["lui"]:
@@ -407,9 +383,7 @@ def bits_to_line(bits, labels=None):
         imm20 = bits[0:1] + bits[12:20] + bits[11:12] + bits[1:11]
         address = imm20.int * 2
         if address % 4:
-            raise Exception(
-                "Disassembly bug: computed misaligned jump address."
-            )
+            raise Exception("Disassembly bug: computed misaligned jump address.")
         if labels is None:
             # TODO(avinash) - add flag that lets this pick out labels from an assembly file.
             return f"jal {rd}, {address}"
